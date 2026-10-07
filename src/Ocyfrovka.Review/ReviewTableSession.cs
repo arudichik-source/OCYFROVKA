@@ -60,5 +60,12 @@ public sealed class ReviewTableSession
 
             _cells.Remove(stale);
         }
+
+        ColumnCount = Math.Max(
+            layout.ColumnCount,
+            _cells.Keys
+                .Select(key => key.ColumnIndex + 1)
+                .DefaultIfEmpty(0)
+                .Max());
     }
 }
