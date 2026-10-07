@@ -335,7 +335,9 @@ public partial class MainWindow : Window
         1 => PreprocessingProfile.Grayscale,
         2 => PreprocessingProfile.HighContrast,
         3 => PreprocessingProfile.Binary,
-        4 => PreprocessingProfile.Sharpened,
+        4 => PreprocessingProfile.AdaptiveBinary,
+        5 => PreprocessingProfile.ShadowCorrected,
+        6 => PreprocessingProfile.Sharpened,
         _ => PreprocessingProfile.Auto
     };
 
@@ -402,6 +404,8 @@ public partial class MainWindow : Window
                     $"яскравість {processed.Quality.Brightness:0.#} · " +
                     $"контраст {processed.Quality.Contrast:0.#} · " +
                     $"деталі {processed.Quality.EdgeScore:0.#} · " +
+                    $"deskew {processed.DeskewAngle:+0.##;-0.##;0}° · " +
+                    $"межі {processed.ContentBounds.Width}×{processed.ContentBounds.Height} · " +
                     $"Otsu {processed.OtsuThreshold}. {warnings}";
                 return;
             }
@@ -426,6 +430,8 @@ public partial class MainWindow : Window
         PreprocessingProfile.Grayscale => "Відтінки сірого",
         PreprocessingProfile.HighContrast => "Високий контраст",
         PreprocessingProfile.Binary => "Ч/Б (Otsu)",
+        PreprocessingProfile.AdaptiveBinary => "Адаптивний Ч/Б",
+        PreprocessingProfile.ShadowCorrected => "Корекція освітлення",
         PreprocessingProfile.Sharpened => "Різкість",
         _ => "Авто"
     };
