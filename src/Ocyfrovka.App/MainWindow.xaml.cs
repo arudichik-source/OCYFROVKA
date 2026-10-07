@@ -1,16 +1,19 @@
 using Microsoft.Win32;
 using Ocyfrovka.App.Services;
+using Ocyfrovka.App.Review;
 using Ocyfrovka.Core.Documents;
 using Ocyfrovka.Core.Input;
 using Ocyfrovka.Core.Ocr;
 using Ocyfrovka.Imaging;
 using Ocyfrovka.Layout;
-using System.Data;
+using Ocyfrovka.Review;
 using Ocyfrovka.Ocr.Tesseract;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using System.Windows.Data;
+using System.Windows.Media;
 
 namespace Ocyfrovka.App;
 
@@ -18,6 +21,9 @@ public partial class MainWindow : Window
 {
     private readonly DigitizationDocument _document = new();
     private readonly Dictionary<Guid, ProcessedPreview> _processedPreviews = [];
+    private readonly Dictionary<Guid, ReviewTableSession> _reviewSessions = [];
+    private readonly Dictionary<Guid, string> _ocrTextByPage = [];
+    private ReviewGridCellViewModel? _selectedReviewCell;
 
     private bool _isImporting;
     private bool _isProcessing;
@@ -70,7 +76,7 @@ public partial class MainWindow : Window
     private async Task AddFilesAsync(IEnumerable<string> paths)
     {
         _isImporting = true;
-        StatusText.Text = "Stage 5: імпорт файлів…";
+        StatusText.Text = "Stage 6: імпорт файлів…";
 
         try
         {
@@ -141,8 +147,8 @@ public partial class MainWindow : Window
             }
 
             StatusText.Text = added > 0
-                ? $"Stage 5: у документі {_document.Count} стор."
-                : "Stage 5: нових сторінок не додано.";
+                ? $"Stage 6: у документі {_document.Count} стор."
+                : "Stage 6: нових сторінок не додано.";
 
             if (unsupported > 0 || errors.Count > 0)
             {
@@ -162,8 +168,23 @@ public partial class MainWindow : Window
 
     private void InputFilesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        OcrTextBox?.Clear();
+        ClearOcrOutput();
         ShowSelectedPreview();
+
+        if (GetSelectedPage() is not { } page)
+        {
+            return;
+        }
+
+        if (_ocrTextByPage.TryGetValue(page.Id, out var text))
+        {
+            OcrTextBox.Text = text;
+        }
+
+        if (_reviewSessions.TryGetValue(page.Id, out var session))
+        {
+            ShowReviewSession(session);
+        }
     }
 
     private void MoveUp_Click(object sender, RoutedEventArgs e)
@@ -232,6 +253,8 @@ public partial class MainWindow : Window
 
         _document.Remove(page.Id);
         _processedPreviews.Remove(page.Id);
+        _reviewSessions.Remove(page.Id);
+        _ocrTextByPage.Remove(page.Id);
 
         DocumentPage? next = null;
         if (_document.Count > 0)
@@ -242,17 +265,19 @@ public partial class MainWindow : Window
         _showProcessed = false;
         ClearOcrOutput();
         RefreshPages(next);
-        StatusText.Text = $"Stage 5: у документі {_document.Count} стор.";
+        StatusText.Text = $"Stage 6: у документі {_document.Count} стор.";
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
     {
         _document.Clear();
         _processedPreviews.Clear();
+        _reviewSessions.Clear();
+        _ocrTextByPage.Clear();
         _showProcessed = false;
         ClearOcrOutput();
         RefreshPages();
-        StatusText.Text = "Stage 5: документ очищено.";
+        StatusText.Text = "Stage 6: документ очищено.";
     }
 
     private void ShowOriginal_Click(object sender, RoutedEventArgs e)
@@ -271,7 +296,7 @@ public partial class MainWindow : Window
         if (!_processedPreviews.ContainsKey(page.Id))
         {
             _showProcessed = false;
-            StatusText.Text = "Stage 5: спочатку натисніть «Обробити» для цієї сторінки.";
+            StatusText.Text = "Stage 6: спочатку натисніть «Обробити» для цієї сторінки.";
             ShowSelectedPreview();
             return;
         }
@@ -285,7 +310,7 @@ public partial class MainWindow : Window
         if (GetSelectedPage() is not { } page ||
             !_processedPreviews.TryGetValue(page.Id, out var processed))
         {
-            StatusText.Text = "Stage 5: спочатку обробіть сторінку.";
+            StatusText.Text = "Stage 6: спочатку обробіть сторінку.";
             return;
         }
 
@@ -296,8 +321,8 @@ public partial class MainWindow : Window
         ShowSelectedPreview();
 
         StatusText.Text = cropped.CropApplied
-            ? $"Stage 5: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
-            : "Stage 5: межі збігаються з повним кадром.";
+            ? $"Stage 6: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
+            : "Stage 6: межі збігаються з повним кадром.";
     }
 
     private void ResetCrop_Click(object sender, RoutedEventArgs e)
@@ -314,7 +339,7 @@ public partial class MainWindow : Window
         _showProcessed = true;
         ClearOcrOutput();
         ShowSelectedPreview();
-        StatusText.Text = "Stage 5: показано повний оброблений кадр.";
+        StatusText.Text = "Stage 6: показано повний оброблений кадр.";
     }
 
     private async void ProcessSelected_Click(object sender, RoutedEventArgs e)
@@ -325,7 +350,7 @@ public partial class MainWindow : Window
         }
 
         _isProcessing = true;
-        StatusText.Text = "Stage 5: обробка сторінки…";
+        StatusText.Text = "Stage 6: обробка сторінки…";
 
         try
         {
@@ -341,7 +366,7 @@ public partial class MainWindow : Window
             ShowSelectedPreview();
 
             StatusText.Text =
-                $"Stage 5: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
+                $"Stage 6: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
         }
         catch (Exception ex)
         {
@@ -355,7 +380,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 5: помилка обробки сторінки.";
+            StatusText.Text = "Stage 6: помилка обробки сторінки.";
         }
         finally
         {
@@ -399,7 +424,7 @@ public partial class MainWindow : Window
 
         _isOcrRunning = true;
         DigitizeButton.IsEnabled = false;
-        StatusText.Text = $"Stage 5: OCR {language}…";
+        StatusText.Text = $"Stage 6: OCR {language}…";
 
         try
         {
@@ -420,11 +445,12 @@ public partial class MainWindow : Window
                     Language: language,
                     Profile: "auto"));
 
+            _ocrTextByPage[page.Id] = result.Text;
             OcrTextBox.Text = result.Text;
-            ShowStructuredLayout(result.Words);
+            ShowStructuredLayout(page.Id, result.Words);
 
             StatusText.Text =
-                $"Stage 5: OCR + структура завершені · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
+                $"Stage 6: OCR + структура завершені · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
         }
         catch (Exception ex)
         {
@@ -435,7 +461,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 5: OCR завершився помилкою.";
+            StatusText.Text = "Stage 6: OCR завершився помилкою.";
         }
         finally
         {
@@ -447,10 +473,12 @@ public partial class MainWindow : Window
     private void ClearOcrOutput()
     {
         OcrTextBox?.Clear();
+        _selectedReviewCell = null;
 
         if (StructuredTableGrid is not null)
         {
             StructuredTableGrid.ItemsSource = null;
+            StructuredTableGrid.Columns.Clear();
         }
 
         if (LayoutStatusText is not null)
@@ -459,92 +487,305 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowStructuredLayout(IReadOnlyList<OcrWord> words)
+    private void ShowStructuredLayout(
+        Guid pageId,
+        IReadOnlyList<OcrWord> words)
     {
         var layout = TableLayoutAnalyzer.Analyze(words);
 
         if (!layout.IsLikelyTable || layout.Rows.Count == 0 || layout.ColumnCount < 2)
         {
             StructuredTableGrid.ItemsSource = null;
+            StructuredTableGrid.Columns.Clear();
+            _selectedReviewCell = null;
             LayoutStatusText.Text =
                 $"Таблицю не підтверджено · рядків тексту {layout.Lines.Count} · кандидатних колонок {layout.ColumnCount}.";
             return;
         }
 
-        var table = new DataTable();
-        var header = layout.HeaderRowIndex is int headerIndex
-            ? layout.Rows.FirstOrDefault(row => row.Index == headerIndex)
-            : null;
-
-        for (var column = 0; column < layout.ColumnCount; column++)
+        if (_reviewSessions.TryGetValue(pageId, out var session))
         {
-            var proposed = header?.Cells
-                .FirstOrDefault(cell => cell.ColumnIndex == column)?
-                .Text
-                .Trim();
-
-            var name = MakeUniqueColumnName(
-                table,
-                string.IsNullOrWhiteSpace(proposed)
-                    ? $"Колонка {column + 1}"
-                    : proposed);
-
-            table.Columns.Add(name);
+            session.Merge(layout);
+        }
+        else
+        {
+            session = new ReviewTableSession(layout);
+            _reviewSessions[pageId] = session;
         }
 
-        foreach (var row in layout.Rows)
+        ShowReviewSession(session);
+    }
+
+    private void ShowReviewSession(ReviewTableSession session)
+    {
+        var projection = ReviewGridProjection.Create(session);
+
+        StructuredTableGrid.ItemsSource = null;
+        StructuredTableGrid.Columns.Clear();
+        _selectedReviewCell = null;
+
+        for (var column = 0; column < projection.ColumnCount; column++)
         {
-            if (layout.HeaderRowIndex == row.Index)
-            {
-                continue;
-            }
-
-            var values = Enumerable.Repeat(string.Empty, layout.ColumnCount)
-                .Cast<object>()
-                .ToArray();
-
-            foreach (var cell in row.Cells)
-            {
-                if ((uint)cell.ColumnIndex < (uint)values.Length)
-                {
-                    values[cell.ColumnIndex] = cell.Text;
-                }
-            }
-
-            table.Rows.Add(values);
+            StructuredTableGrid.Columns.Add(
+                CreateReviewColumn(
+                    projection.Headers[column],
+                    column));
         }
 
-        StructuredTableGrid.ItemsSource = table.DefaultView;
-
-        var confidences = layout.Rows
-            .SelectMany(row => row.Cells)
-            .Select(cell => cell.Confidence)
-            .Where(value => value >= 0)
-            .ToArray();
-
-        var averageConfidence = confidences.Length == 0
-            ? 0
-            : confidences.Average();
+        StructuredTableGrid.ItemsSource = projection.Rows;
 
         LayoutStatusText.Text =
-            $"Таблиця: {table.Rows.Count} ряд. × {layout.ColumnCount} кол. · " +
-            $"confidence {averageConfidence:0.#}% · " +
-            $"заголовок {(layout.HeaderRowIndex is null ? "не визначено" : "визначено")}.";
+            $"Стан: {GetReviewStateName(projection.SessionState)} · " +
+            $"{projection.Rows.Count} ряд. × {projection.ColumnCount} кол. · " +
+            $"підтверджено {projection.ConfirmedCount} · " +
+            $"перевірено {projection.ReviewedCount} · " +
+            $"помилок {projection.ErrorCount} · " +
+            $"низька confidence {projection.LowConfidenceCount}.";
+
+        RefreshDocumentReviewStatus();
     }
 
-    private static string MakeUniqueColumnName(DataTable table, string proposed)
+    private static DataGridTextColumn CreateReviewColumn(
+        string header,
+        int columnIndex)
     {
-        var baseName = proposed;
-        var candidate = baseName;
-        var suffix = 2;
+        var textPath = $"Cells[{columnIndex}].Text";
+        var confidencePath = $"Cells[{columnIndex}].Confidence";
+        var lowConfidencePath = $"Cells[{columnIndex}].IsLowConfidence";
+        var confirmedPath = $"Cells[{columnIndex}].IsConfirmed";
+        var errorPath = $"Cells[{columnIndex}].IsError";
+        var suggestionPath = $"Cells[{columnIndex}].HasSuggestion";
+        var correctedPath = $"Cells[{columnIndex}].IsUserCorrected";
+        var tooltipPath = $"Cells[{columnIndex}].Tooltip";
 
-        while (table.Columns.Contains(candidate))
+        var elementStyle = new Style(typeof(TextBlock));
+        elementStyle.Setters.Add(new Setter(
+            TextBlock.PaddingProperty,
+            new Thickness(6, 3, 6, 3)));
+        elementStyle.Setters.Add(new Setter(
+            FrameworkElement.ToolTipProperty,
+            new Binding(tooltipPath)));
+
+        var lowTrigger = new DataTrigger
         {
-            candidate = $"{baseName} ({suffix++})";
+            Binding = new Binding(lowConfidencePath),
+            Value = true
+        };
+        lowTrigger.Setters.Add(new Setter(
+            TextBlock.BackgroundProperty,
+            new SolidColorBrush(Color.FromRgb(92, 72, 18))));
+        elementStyle.Triggers.Add(lowTrigger);
+
+        var confirmedTrigger = new DataTrigger
+        {
+            Binding = new Binding(confirmedPath),
+            Value = true
+        };
+        confirmedTrigger.Setters.Add(new Setter(
+            TextBlock.BackgroundProperty,
+            new SolidColorBrush(Color.FromRgb(24, 82, 54))));
+        elementStyle.Triggers.Add(confirmedTrigger);
+
+        var suggestionTrigger = new DataTrigger
+        {
+            Binding = new Binding(suggestionPath),
+            Value = true
+        };
+        suggestionTrigger.Setters.Add(new Setter(
+            TextBlock.BackgroundProperty,
+            new SolidColorBrush(Color.FromRgb(54, 55, 103))));
+        elementStyle.Triggers.Add(suggestionTrigger);
+
+        var correctedTrigger = new DataTrigger
+        {
+            Binding = new Binding(correctedPath),
+            Value = true
+        };
+        correctedTrigger.Setters.Add(new Setter(
+            TextBlock.BackgroundProperty,
+            new SolidColorBrush(Color.FromRgb(49, 65, 94))));
+        elementStyle.Triggers.Add(correctedTrigger);
+
+        var errorTrigger = new DataTrigger
+        {
+            Binding = new Binding(errorPath),
+            Value = true
+        };
+        errorTrigger.Setters.Add(new Setter(
+            TextBlock.BackgroundProperty,
+            new SolidColorBrush(Color.FromRgb(105, 37, 37))));
+        elementStyle.Triggers.Add(errorTrigger);
+
+        var editingStyle = new Style(typeof(TextBox));
+        editingStyle.Setters.Add(new Setter(
+            TextBox.PaddingProperty,
+            new Thickness(5, 2, 5, 2)));
+        editingStyle.Setters.Add(new Setter(
+            FrameworkElement.ToolTipProperty,
+            new Binding(tooltipPath)));
+
+        return new DataGridTextColumn
+        {
+            Header = header,
+            Binding = new Binding(textPath)
+            {
+                Mode = BindingMode.TwoWay,
+                UpdateSourceTrigger = UpdateSourceTrigger.LostFocus
+            },
+            ElementStyle = elementStyle,
+            EditingElementStyle = editingStyle,
+            MinWidth = 80
+        };
+    }
+
+    private void StructuredTableGrid_SelectedCellsChanged(
+        object sender,
+        SelectedCellsChangedEventArgs e)
+    {
+        _selectedReviewCell = null;
+
+        if (StructuredTableGrid.CurrentItem is not ReviewGridRowViewModel row ||
+            StructuredTableGrid.CurrentColumn is null)
+        {
+            return;
         }
 
-        return candidate;
+        var column = StructuredTableGrid.CurrentColumn.DisplayIndex;
+        if ((uint)column >= (uint)row.Cells.Length)
+        {
+            return;
+        }
+
+        _selectedReviewCell = row.Cells[column];
+
+        if (_selectedReviewCell is not null)
+        {
+            StatusText.Text =
+                $"Stage 6: клітинка R{_selectedReviewCell.RowIndex + 1}C{_selectedReviewCell.ColumnIndex + 1} · " +
+                $"{_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}%";
+        }
     }
+
+    private void ConfirmReviewCell_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedReviewCell is null)
+        {
+            StatusText.Text = "Stage 6: виберіть клітинку для підтвердження.";
+            return;
+        }
+
+        _selectedReviewCell.Confirm();
+        StructuredTableGrid.Items.Refresh();
+        RefreshReviewStatus();
+    }
+
+    private void ConfirmAllReviewCells_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedPage() is not { } page ||
+            !_reviewSessions.TryGetValue(page.Id, out var session))
+        {
+            StatusText.Text = "Stage 6: немає таблиці для підтвердження.";
+            return;
+        }
+
+        session.ConfirmAll();
+        ShowReviewSession(session);
+        StatusText.Text = "Stage 6: усі клітинки поточної таблиці підтверджено.";
+    }
+
+    private void AcceptReviewSuggestion_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedReviewCell is null)
+        {
+            StatusText.Text = "Stage 6: виберіть клітинку з пропозицією.";
+            return;
+        }
+
+        if (!_selectedReviewCell.HasSuggestion)
+        {
+            StatusText.Text = "Stage 6: для вибраної клітинки немає активної пропозиції.";
+            return;
+        }
+
+        _selectedReviewCell.AcceptSuggestion();
+        StructuredTableGrid.Items.Refresh();
+        RefreshReviewStatus();
+    }
+
+    private void MarkReviewCellError_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedReviewCell is null)
+        {
+            StatusText.Text = "Stage 6: виберіть проблемну клітинку.";
+            return;
+        }
+
+        _selectedReviewCell.MarkError();
+        StructuredTableGrid.Items.Refresh();
+        RefreshReviewStatus();
+    }
+
+    private void ResetReviewCell_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedReviewCell is null)
+        {
+            StatusText.Text = "Stage 6: виберіть клітинку.";
+            return;
+        }
+
+        _selectedReviewCell.ResetToRecognition();
+        StructuredTableGrid.Items.Refresh();
+        RefreshReviewStatus();
+    }
+
+    private void RefreshReviewStatus()
+    {
+        if (GetSelectedPage() is not { } page ||
+            !_reviewSessions.TryGetValue(page.Id, out var session))
+        {
+            return;
+        }
+
+        var projection = ReviewGridProjection.Create(session);
+
+        LayoutStatusText.Text =
+            $"Стан: {GetReviewStateName(projection.SessionState)} · " +
+            $"{projection.Rows.Count} ряд. × {projection.ColumnCount} кол. · " +
+            $"підтверджено {projection.ConfirmedCount} · " +
+            $"перевірено {projection.ReviewedCount} · " +
+            $"помилок {projection.ErrorCount} · " +
+            $"низька confidence {projection.LowConfidenceCount}.";
+
+        RefreshDocumentReviewStatus();
+    }
+
+    private void RefreshDocumentReviewStatus()
+    {
+        var summary = ReviewDocumentSummary.Create(_reviewSessions.Values);
+        var documentState = GetReviewStateName(summary.State);
+
+        if (_selectedReviewCell is not null)
+        {
+            StatusText.Text =
+                $"Stage 6: {_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}% · " +
+                $"документ: {documentState}";
+            return;
+        }
+
+        StatusText.Text =
+            $"Stage 6: документ {documentState} · " +
+            $"підтверджено {summary.ConfirmedCells}/{summary.TotalCells} · " +
+            $"помилок {summary.ErrorCells}.";
+    }
+
+    private static string GetReviewStateName(ReviewSessionState state) => state switch
+    {
+        ReviewSessionState.New => "новий",
+        ReviewSessionState.NeedsReview => "потребує перевірки",
+        ReviewSessionState.Reviewed => "перевірено",
+        ReviewSessionState.Error => "є помилки",
+        _ => state.ToString()
+    };
 
     private DocumentPage? GetSelectedPage() => InputFilesList.SelectedItem as DocumentPage;
 
@@ -614,12 +855,12 @@ public partial class MainWindow : Window
         if (TesseractRuntimeLocator.IsRuntimeAvailable(AppContext.BaseDirectory))
         {
             StatusText.Text =
-                $"Stage 5: OCR runtime готовий · мов {installed.Count}";
+                $"Stage 6: OCR runtime готовий · мов {installed.Count}";
         }
         else
         {
             StatusText.Text =
-                "Stage 5: OCR runtime буде доступний у portable-збірці.";
+                "Stage 6: OCR runtime буде доступний у portable-збірці.";
         }
     }
 

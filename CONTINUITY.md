@@ -2,95 +2,107 @@
 
 **Updated:** 2026-10-07  
 **Repository:** `arudichik-source/OCYFROVKA`  
-**Active branch:** `stage/05-layout-tables`  
-**Latest merged PR:** #4 — Stage 4: pinned multilingual local OCR runtime  
-**Green main commit after Stage 4:** `f286d6e4b2b798b62b739664924067a97b309a40`  
-**Latest verified Stage 5 functional commit:** `16ad8ba3ace17d367c97cd9874d923dca82f3637`
+**Active branch:** `stage/06-review`  
+**Latest merged PR:** #5 — Stage 5: deterministic OCR layout and table reconstruction  
+**Green main commit after Stage 5:** `7098ecaa533512893c207bddc3b0d2f0631b2773`  
+**Latest verified Stage 6 functional commit:** `25920ada350d581d4f428efe5dbe3a6d7c08e05c`
 
-## Fixed project decisions
+## Fixed decisions
 
 - Windows x64, C# / WPF / .NET 10.
 - Self-contained portable ZIP; no installer/admin rights required.
 - Local/offline OCR only in the base product.
 - Tesseract runtime/models are pinned and hash-verified.
 - Original documents are never overwritten.
-- OCR word coordinates/confidence remain source provenance for later review/correction.
-- Structured reconstruction must be deterministic and may not invent missing cells/values.
+- OCR source text, word coordinates and confidence remain provenance even after user edits.
+- User edits and confirmed values must never be silently overwritten by OCR refresh or auto-correction.
+- Smart correction may propose uncertain changes, but acceptance remains explicit.
 
-## Completed through Stage 4
+## Completed through Stage 5
 
-Stages 1–4 are merged into `main` and green. Stage 4 includes pinned Tesseract 5.5.3.20260724, six bundled language resources, dynamic language selection and real local OCR.
+Stages 1–5 are merged into `main` and green.
 
-## Stage 5 — implemented
+## Stage 6 — implemented
 
-- new independent `Ocyfrovka.Layout` project;
-- OCR words normalized into geometry-based `TextLine` objects;
-- stable row grouping by vertical centers;
-- word chunks split into candidate cells using text-height-bounded gap thresholds;
-- recurring X anchors infer columns;
-- table rows/cells reconstructed from source OCR words;
-- each `TableCell` preserves:
-  - text;
-  - bounds;
-  - average confidence;
-  - original source words;
-- header-row heuristic identifies a textual header followed by numeric/data cells;
-- paragraph-like OCR is not forced into a table;
-- WPF now exposes two OCR-result tabs:
-  - raw text;
-  - structured table;
-- table preview dynamically creates columns from detected headers or generic column names;
-- duplicate header names are made unique;
-- UI reports reconstructed dimensions, average cell confidence and whether a header was identified.
+New independent `Ocyfrovka.Review` domain:
 
-## Stage 5 failures fixed
+- `ReviewCellState`:
+  - Recognized;
+  - CorrectedAutomatically;
+  - Suggested;
+  - CorrectedByUser;
+  - ConfirmedByUser;
+  - Error.
+- stable `ReviewCellKey` by row/column;
+- `ReviewCell` stores current value separately from OCR source value;
+- confidence, bounds and source words remain attached as provenance;
+- manual/confirmed cells are protected from recognition refresh;
+- automatic correction cannot overwrite protected cells;
+- suggestions do not change current text until explicitly accepted;
+- stale confirmed cells are retained rather than silently discarded;
+- `ReviewTableSession` merges new OCR/table analysis into an existing review session;
+- `ReviewSessionState`: New / NeedsReview / Reviewed / Error;
+- `ReviewSummary` and document-wide `ReviewDocumentSummary`;
+- confirm-all excludes detected header row.
 
-1. CI initially failed because `Ocyfrovka.Layout` was not referenced by the app/test projects.
-2. After references were added, two layout tests exposed a threshold bug: wide table column gaps inflated the global median gap and prevented cell splitting.
-3. The split threshold is now capped relative to median text height, preserving normal word spacing while separating table columns.
+WPF review UI:
+
+- structured table is editable;
+- per-page review sessions persist while switching pages;
+- raw OCR text persists per page in-session;
+- selected-cell actions:
+  - Confirm;
+  - Confirm all;
+  - Accept suggestion;
+  - Mark error;
+  - Reset to OCR;
+- low-confidence cells are highlighted;
+- confirmed/error/suggested/user-corrected states have distinct visual states;
+- page review state and document-wide review state are displayed;
+- source OCR text is not replaced inside the provenance model when a user edits a cell.
 
 ## Latest verified CI
 
 Workflow run:
 
-- Run: `37627286727`
-- Commit: `16ad8ba3ace17d367c97cd9874d923dca82f3637`
+- Run: `37632254623`
+- Commit: `25920ada350d581d4f428efe5dbe3a6d7c08e05c`
 - Result: **SUCCESS**
-- Core/OCR/Imaging/Layout tests: **49/49 PASS**
-- Windows integration tests: **5/5 PASS**
-- Total: **54/54 PASS**
+- Core/OCR/Imaging/Layout/Review tests: **59/59 PASS**
+- Windows integration tests: **7/7 PASS**
+- Total: **66/66 PASS**
+- Tesseract: **v5.5.3.20260724**
 - Portable Windows x64 publish: **SUCCESS**
-- Portable artifact upload: **SUCCESS**
+- Artifact upload: **SUCCESS**
+- Artifact: `OCYFROVKA_Portable_x64`
+- Artifact ID: `11486417675`
+- Artifact size: `166858939` bytes
+- Artifact SHA256: `e93bf116968cdb23849df856006fca7dbb2e0b98bf077e720bc5a0cbf9f8b106`
 
 ## Immediate next work
 
-1. Finalize/check PR #5 for Stage 5.
-2. Merge Stage 5 into `main` after final green PR check.
+1. Open/check PR #6 for Stage 6.
+2. Merge after final green PR check.
 3. Verify post-merge `main`.
-4. Create `stage/06-review`.
-5. Implement review state:
-   - recognized;
-   - auto-corrected;
-   - suggested;
-   - corrected-by-user;
-   - confirmed-by-user;
-   - error.
-6. User-confirmed values must survive OCR refresh/re-analysis and never be silently overwritten.
-7. Add editable structured-table review UI and low-confidence highlighting.
-8. Add deterministic state-transition tests.
+4. Create `stage/07-smart-corrector`.
+5. Implement local dictionary + deterministic SmartCorrector:
+   - normalization;
+   - Unicode/Cyrillic/Latin lookalikes;
+   - numeric-context correction only inside numeric fields;
+   - Levenshtein/token matching;
+   - confidence-ranked suggestions;
+   - no uncertain silent replacement;
+   - feed suggestions into `ReviewCell.SetSuggestion`.
+6. Add tests and keep portable build green.
 
 ## Technical notes
 
-- Layout project: `src/Ocyfrovka.Layout`.
-- Main analyzer: `TableLayoutAnalyzer`.
-- Table reconstruction uses source `OcrWord` geometry, not raw string parsing.
-- Current structured preview is an in-memory `DataTable`; authoritative provenance remains in `TableLayout/TableCell`.
-- Stage 4 runtime lock remains `build/ocr-runtime.lock.json`.
-- OCR input remains private under `Workspace/Temp/OcrInput`.
-
-## GitHub workflow rule
-
-Use stage branches/PRs and keep `main` releasable. Update this file after meaningful development blocks.
+- Review domain: `src/Ocyfrovka.Review`.
+- Layout domain: `src/Ocyfrovka.Layout`.
+- Review sessions currently persist in memory for the application session.
+- Durable persistence across restarts belongs to the later SQLite stage.
+- OCR runtime lock remains `build/ocr-runtime.lock.json`.
+- Private OCR inputs remain under `Workspace/Temp/OcrInput`.
 
 ## Data safety
 

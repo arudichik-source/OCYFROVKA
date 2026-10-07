@@ -53,16 +53,28 @@
 - [x] Portable build verification.
 
 ## Stage 6 — Review workflow
-- [ ] Per-document review state.
-- [ ] Per-cell review state.
-- [ ] User edits without silently overwriting OCR source provenance.
-- [ ] Confirm/reject/suggest workflow.
-- [ ] Highlight low-confidence cells.
-- [ ] Preserve user-confirmed values across OCR re-runs.
-- [ ] Regression tests for state transitions and protected confirmed values.
+- [x] Per-document and per-page review state.
+- [x] Per-cell states: Recognized / CorrectedAutomatically / Suggested / CorrectedByUser / ConfirmedByUser / Error.
+- [x] Editable structured table without overwriting OCR source provenance.
+- [x] Confirm / confirm-all / error / reset-to-OCR / accept-suggestion actions.
+- [x] Low-confidence and review-state highlighting.
+- [x] Preserve manual and confirmed values across OCR re-runs.
+- [x] Preserve per-page OCR text and review session when switching pages.
+- [x] Aggregate document review summary.
+- [x] Regression tests for state transitions, protected values and UI projection.
+- [x] Stage 6 portable build verification.
 
-## Stage 7+
-- [ ] Dictionaries and SmartCorrector.
+## Stage 7 — Dictionaries and SmartCorrector
+- [ ] Local dictionary model and JSON loader.
+- [ ] Text/name normalization.
+- [ ] Cyrillic/Latin lookalike normalization.
+- [ ] Context-safe numeric lookalike correction.
+- [ ] Levenshtein/token/fuzzy matching.
+- [ ] Suggestions with confidence; no silent uncertain correction.
+- [ ] Apply suggestions through Stage 6 review state.
+- [ ] Deterministic tests.
+
+## Stage 8+
 - [ ] SQLite persistence and correction memory.
 - [ ] XLSX export.
 - [ ] Queue/background processing.
