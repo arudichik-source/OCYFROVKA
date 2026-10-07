@@ -2,8 +2,9 @@
 
 **Updated:** 2026-10-07  
 **Repository:** `arudichik-source/OCYFROVKA`  
-**Active branch:** `stage/01-bootstrap`  
-**Pull request:** #1 — Stage 1: bootstrap portable WPF application
+**Active branch:** `stage/02-input`  
+**Latest merged PR:** #1 — Stage 1: bootstrap portable WPF application  
+**Main commit after merge:** `23a8224ae1950d1394822b22ae6d4afda9e53da5`
 
 ## Purpose
 
@@ -24,9 +25,11 @@ This file is the restart point for the next ChatGPT branch/conversation. Read th
 - Mixed language expressions such as `ukr+eng` are supported.
 - Runtime/private data must not enter the public repository.
 
-## Current implementation
+## Completed — Stage 1
 
-Stage 1 bootstrap currently contains:
+Stage 1 is merged into `main` and verified green.
+
+Implemented:
 
 - WPF application skeleton and dark initial UI.
 - Drag & Drop / file picker shell for image/PDF input.
@@ -41,30 +44,58 @@ Stage 1 bootstrap currently contains:
 - GitHub Actions Windows x64 self-contained publish.
 - Technical specification v0.2 and roadmap.
 - Third-party licensing/notice notes.
+- Fail-fast checks in CI and local build script.
+- Persistent handoff file.
 
-## Current CI issue / last action
+## Latest verified CI
 
-A previous workflow run failed during unit-test compilation because xUnit attributes were not in scope. The fix is to add `tests/Ocyfrovka.Core.Tests/GlobalUsings.cs` with `global using Xunit;`.
+Main workflow run:
 
-After that commit, verify the newest workflow run. Do not move to the next stage until CI is green.
+- Run: `37606740259`
+- Commit: `23a8224ae1950d1394822b22ae6d4afda9e53da5`
+- Result: **SUCCESS**
+- Unit tests: **7/7 PASS**
+- Portable build artifact produced successfully.
 
-## Immediate next work after green CI
+Verified artifact:
 
-1. Finalize Stage 1 and merge PR #1 to `main`.
-2. Start Stage 2 on a new branch (recommended: `stage/02-input`).
-3. Implement real page/document input model.
-4. Implement image preview, page ordering and rotation.
-5. Add PDF page extraction.
-6. Then Stage 3 preprocessing.
-7. Stage 4 packages/pins the actual portable Tesseract Windows runtime and multilingual traineddata.
+- Name: `OCYFROVKA_Portable_x64`
+- ZIP artifact size: about 65 MB
+- Artifact ID: `11474349022`
+
+## Current branch / Stage 2 goal
+
+Branch `stage/02-input` was created from the green `main`.
+
+Stage 2 scope:
+
+1. Real document/page domain model.
+2. Import JPG/JPEG/PNG/BMP/TIF/TIFF.
+3. Image preview.
+4. Multi-page document handling.
+5. Page ordering.
+6. 90° page rotation without destroying the original source file.
+7. PDF page extraction.
+8. Input validation and clear unsupported/corrupt-file errors.
+9. Tests for the input model and page operations.
+10. Open PR for Stage 2 only after CI is green.
+
+Do not start image preprocessing or package the real Tesseract runtime until Stage 2 input is stable.
+
+## Known technical notes
+
+- A prior CI failure from missing xUnit global usings was fixed with `tests/Ocyfrovka.Core.Tests/GlobalUsings.cs`.
+- A later publish failure from missing `System.IO` imports in `WorkspaceInitializer.cs` was fixed.
+- CI/local PowerShell scripts now explicitly fail on non-zero `dotnet` exit codes.
+- Current `main` is buildable and produces a self-contained Windows x64 ZIP.
 
 ## GitHub workflow rule
 
-Use feature/stage branches and PRs. Keep `main` releasable. Every meaningful pass must end by:
+Use stage branches and PRs. Keep `main` releasable. Every meaningful pass must end by:
 
 1. running/checking GitHub Actions;
 2. fixing failures found in that pass where practical;
-3. updating this file with the exact active branch, PR, current state, latest failure/success and next task;
+3. updating this file with exact branch, PR, current state, latest failure/success and next task;
 4. stopping so the user can explicitly request the next pass.
 
 ## Data safety
