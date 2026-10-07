@@ -75,7 +75,7 @@ public sealed class ReviewCell
 
     public void SetSuggestion(string text)
     {
-        if (State == ReviewCellState.ConfirmedByUser)
+        if (IsProtectedFromRecognitionRefresh)
         {
             return;
         }
