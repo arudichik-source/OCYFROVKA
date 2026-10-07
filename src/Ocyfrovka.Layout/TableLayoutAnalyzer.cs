@@ -153,9 +153,16 @@ public static class TableLayoutAnalyzer
             ? medianHeight * 0.35
             : Median(allPositiveGaps);
 
+        // Do not let the table's own wide inter-column gaps inflate the
+        // split threshold. Word spacing may scale with OCR size, but a cell
+        // boundary should remain bounded relative to the text height.
         var splitThreshold = Math.Max(
             medianHeight * 1.35,
-            Math.Max(8.0, medianGap * 2.75));
+            Math.Max(
+                8.0,
+                Math.Min(
+                    medianGap * 2.75,
+                    medianHeight * 2.5)));
 
         var chunks = new List<Chunk>();
 
