@@ -16,8 +16,11 @@
 ## Stage 3 — Image preprocessing
 - [ ] Crop / page boundary detection.
 - [ ] Deskew and perspective correction.
-- [ ] Grayscale / adaptive threshold / contrast / sharpen.
-- [ ] Image quality score.
+- [x] Grayscale / Otsu threshold / contrast / sharpen.
+- [x] Median 3×3 denoise foundation.
+- [ ] Adaptive threshold / shadow correction refinements.
+- [x] Image quality score and warnings.
+- [x] Original / processed preview switch.
 
 ## Stage 4 — Local OCR
 - [ ] Pin Tesseract Windows build.
