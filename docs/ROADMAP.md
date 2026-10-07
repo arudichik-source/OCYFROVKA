@@ -8,10 +8,10 @@
 - [x] GitHub Actions Windows build.
 
 ## Stage 2 — Input
-- [ ] Import JPG/JPEG/PNG/BMP/TIF/TIFF.
-- [ ] PDF page extraction.
-- [ ] Multi-page document model.
-- [ ] Page ordering and rotation.
+- [x] Import JPG/JPEG/PNG/BMP/TIF/TIFF.
+- [x] Local PDF page extraction and preview rendering.
+- [x] Multi-page document model.
+- [x] Page ordering and non-destructive 90° rotation.
 
 ## Stage 3 — Image preprocessing
 - [ ] Crop / page boundary detection.

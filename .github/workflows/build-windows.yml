@@ -39,14 +39,20 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "App restore failed with exit code $LASTEXITCODE" }
 
           dotnet restore tests/Ocyfrovka.Core.Tests/Ocyfrovka.Core.Tests.csproj
-          if ($LASTEXITCODE -ne 0) { throw "Tests restore failed with exit code $LASTEXITCODE" }
+          if ($LASTEXITCODE -ne 0) { throw "Core tests restore failed with exit code $LASTEXITCODE" }
+
+          dotnet restore tests/Ocyfrovka.App.Tests/Ocyfrovka.App.Tests.csproj
+          if ($LASTEXITCODE -ne 0) { throw "Windows integration tests restore failed with exit code $LASTEXITCODE" }
 
       - name: Unit tests
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           dotnet test tests/Ocyfrovka.Core.Tests/Ocyfrovka.Core.Tests.csproj -c Release --no-restore
-          if ($LASTEXITCODE -ne 0) { throw "Unit tests failed with exit code $LASTEXITCODE" }
+          if ($LASTEXITCODE -ne 0) { throw "Core unit tests failed with exit code $LASTEXITCODE" }
+
+          dotnet test tests/Ocyfrovka.App.Tests/Ocyfrovka.App.Tests.csproj -c Release --no-restore
+          if ($LASTEXITCODE -ne 0) { throw "Windows integration tests failed with exit code $LASTEXITCODE" }
 
       - name: Publish portable Windows x64
         shell: pwsh
