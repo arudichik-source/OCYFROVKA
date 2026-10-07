@@ -8,19 +8,40 @@ public static class ImagePreprocessor
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        var threshold = ComputeOtsuThreshold(source);
         var quality = EvaluateQuality(source);
+        var deskewAngle = ImageGeometry.EstimateDeskewAngle(source);
+        var geometryNormalized = Math.Abs(deskewAngle) >= 0.25
+            ? ImageGeometry.Rotate(source, deskewAngle)
+            : Clone(source);
+
+        var contentBounds = ImageGeometry.DetectContentBounds(geometryNormalized);
+        var threshold = ComputeOtsuThreshold(geometryNormalized);
 
         var output = profile switch
         {
-            PreprocessingProfile.Grayscale => Clone(source),
-            PreprocessingProfile.HighContrast => ContrastStretch(source),
-            PreprocessingProfile.Binary => Threshold(source, threshold),
-            PreprocessingProfile.Sharpened => Sharpen(source),
-            _ => Sharpen(ContrastStretch(source))
+            PreprocessingProfile.Grayscale => geometryNormalized,
+            PreprocessingProfile.HighContrast => ContrastStretch(geometryNormalized),
+            PreprocessingProfile.Binary => Threshold(geometryNormalized, threshold),
+            PreprocessingProfile.AdaptiveBinary =>
+                AdaptiveThreshold(
+                    NormalizeIllumination(geometryNormalized),
+                    blockSize: 31,
+                    bias: 10),
+            PreprocessingProfile.ShadowCorrected =>
+                NormalizeIllumination(geometryNormalized),
+            PreprocessingProfile.Sharpened => Sharpen(geometryNormalized),
+            _ => Sharpen(
+                ContrastStretch(
+                    NormalizeIllumination(geometryNormalized)))
         };
 
-        return new PreprocessingResult(output, quality, threshold, profile);
+        return new PreprocessingResult(
+            output,
+            quality,
+            threshold,
+            deskewAngle,
+            contentBounds,
+            profile);
     }
 
     public static GrayImage ContrastStretch(GrayImage source)
@@ -84,6 +105,91 @@ public static class ImagePreprocessor
         for (var i = 0; i < input.Length; i++)
         {
             output[i] = input[i] <= threshold ? (byte)0 : (byte)255;
+        }
+
+        return new GrayImage(source.Width, source.Height, output);
+    }
+
+    public static GrayImage AdaptiveThreshold(
+        GrayImage source,
+        int blockSize = 31,
+        int bias = 10)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        if (blockSize < 3)
+        {
+            throw new ArgumentOutOfRangeException(nameof(blockSize));
+        }
+
+        if (bias < 0 || bias > 64)
+        {
+            throw new ArgumentOutOfRangeException(nameof(bias));
+        }
+
+        var means = ComputeBlockMeans(source, blockSize, out var blocksX, out var blocksY);
+        var input = source.Pixels.Span;
+        var output = new byte[input.Length];
+
+        for (var y = 0; y < source.Height; y++)
+        {
+            var by = Math.Min(blocksY - 1, y / blockSize);
+
+            for (var x = 0; x < source.Width; x++)
+            {
+                var bx = Math.Min(blocksX - 1, x / blockSize);
+                var localMean = GetSmoothedBlockMean(means, bx, by, blocksX, blocksY);
+                var localThreshold = Math.Clamp(localMean - bias, 0, 255);
+                var index = y * source.Width + x;
+
+                output[index] = input[index] <= localThreshold
+                    ? (byte)0
+                    : (byte)255;
+            }
+        }
+
+        return new GrayImage(source.Width, source.Height, output);
+    }
+
+    public static GrayImage NormalizeIllumination(
+        GrayImage source,
+        int blockSize = 63,
+        double targetBackground = 225)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        if (blockSize < 3)
+        {
+            throw new ArgumentOutOfRangeException(nameof(blockSize));
+        }
+
+        if (targetBackground <= 0 || targetBackground > 255)
+        {
+            throw new ArgumentOutOfRangeException(nameof(targetBackground));
+        }
+
+        var means = ComputeBlockMeans(source, blockSize, out var blocksX, out var blocksY);
+        var input = source.Pixels.Span;
+        var output = new byte[input.Length];
+
+        for (var y = 0; y < source.Height; y++)
+        {
+            var by = Math.Min(blocksY - 1, y / blockSize);
+
+            for (var x = 0; x < source.Width; x++)
+            {
+                var bx = Math.Min(blocksX - 1, x / blockSize);
+                var localMean = Math.Max(
+                    1.0,
+                    GetSmoothedBlockMean(means, bx, by, blocksX, blocksY));
+
+                var index = y * source.Width + x;
+                var corrected = input[index] * targetBackground / localMean;
+                output[index] = (byte)Math.Clamp(
+                    (int)Math.Round(corrected),
+                    0,
+                    255);
+            }
         }
 
         return new GrayImage(source.Width, source.Height, output);
@@ -294,6 +400,78 @@ public static class ImagePreprocessor
         }
 
         return histogram;
+    }
+
+    private static double[] ComputeBlockMeans(
+        GrayImage source,
+        int blockSize,
+        out int blocksX,
+        out int blocksY)
+    {
+        blocksX = (source.Width + blockSize - 1) / blockSize;
+        blocksY = (source.Height + blockSize - 1) / blockSize;
+
+        var means = new double[checked(blocksX * blocksY)];
+        var input = source.Pixels.Span;
+
+        for (var by = 0; by < blocksY; by++)
+        {
+            var startY = by * blockSize;
+            var endY = Math.Min(source.Height, startY + blockSize);
+
+            for (var bx = 0; bx < blocksX; bx++)
+            {
+                var startX = bx * blockSize;
+                var endX = Math.Min(source.Width, startX + blockSize);
+
+                long sum = 0;
+                var count = 0;
+
+                for (var y = startY; y < endY; y++)
+                {
+                    var row = y * source.Width;
+                    for (var x = startX; x < endX; x++)
+                    {
+                        sum += input[row + x];
+                        count++;
+                    }
+                }
+
+                means[by * blocksX + bx] = count == 0
+                    ? 255
+                    : sum / (double)count;
+            }
+        }
+
+        return means;
+    }
+
+    private static double GetSmoothedBlockMean(
+        double[] means,
+        int bx,
+        int by,
+        int blocksX,
+        int blocksY)
+    {
+        double sum = 0;
+        var count = 0;
+
+        for (var dy = -1; dy <= 1; dy++)
+        {
+            var y = by + dy;
+            if ((uint)y >= (uint)blocksY) continue;
+
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                var x = bx + dx;
+                if ((uint)x >= (uint)blocksX) continue;
+
+                sum += means[y * blocksX + x];
+                count++;
+            }
+        }
+
+        return count == 0 ? 255 : sum / count;
     }
 
     private static GrayImage Clone(GrayImage source)
