@@ -8,6 +8,8 @@ internal sealed record ProcessedPreview(
     BitmapSource Image,
     ImageQualityReport Quality,
     int OtsuThreshold,
+    double DeskewAngle,
+    ImageRect ContentBounds,
     PreprocessingProfile Profile);
 
 internal static class ImageProcessingService
@@ -26,6 +28,8 @@ internal static class ImageProcessingService
             bitmap,
             result.Quality,
             result.OtsuThreshold,
+            result.DeskewAngle,
+            result.ContentBounds,
             result.Profile);
     }
 
