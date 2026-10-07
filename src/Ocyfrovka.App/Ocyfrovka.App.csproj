@@ -13,5 +13,6 @@
     <ProjectReference Include="..\Ocyfrovka.Imaging\Ocyfrovka.Imaging.csproj" />
     <ProjectReference Include="..\Ocyfrovka.Ocr.Tesseract\Ocyfrovka.Ocr.Tesseract.csproj" />
     <ProjectReference Include="..\Ocyfrovka.Layout\Ocyfrovka.Layout.csproj" />
+    <ProjectReference Include="..\Ocyfrovka.Review\Ocyfrovka.Review.csproj" />
   </ItemGroup>
 </Project>
