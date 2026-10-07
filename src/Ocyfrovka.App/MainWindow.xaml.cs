@@ -2,10 +2,13 @@ using Microsoft.Win32;
 using Ocyfrovka.App.Services;
 using Ocyfrovka.Core.Documents;
 using Ocyfrovka.Core.Input;
+using Ocyfrovka.Core.Ocr;
 using Ocyfrovka.Imaging;
+using Ocyfrovka.Ocr.Tesseract;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 
 namespace Ocyfrovka.App;
 
@@ -16,12 +19,18 @@ public partial class MainWindow : Window
 
     private bool _isImporting;
     private bool _isProcessing;
+    private bool _isOcrRunning;
     private bool _showProcessed;
 
     public MainWindow()
     {
         InitializeComponent();
         RefreshPages();
+    }
+
+    private void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        RefreshOcrLanguages();
     }
 
     private async void AddFiles_Click(object sender, RoutedEventArgs e)
@@ -59,7 +68,7 @@ public partial class MainWindow : Window
     private async Task AddFilesAsync(IEnumerable<string> paths)
     {
         _isImporting = true;
-        StatusText.Text = "Stage 3: імпорт файлів…";
+        StatusText.Text = "Stage 4: імпорт файлів…";
 
         try
         {
@@ -130,8 +139,8 @@ public partial class MainWindow : Window
             }
 
             StatusText.Text = added > 0
-                ? $"Stage 3: у документі {_document.Count} стор."
-                : "Stage 3: нових сторінок не додано.";
+                ? $"Stage 4: у документі {_document.Count} стор."
+                : "Stage 4: нових сторінок не додано.";
 
             if (unsupported > 0 || errors.Count > 0)
             {
@@ -150,7 +159,10 @@ public partial class MainWindow : Window
     }
 
     private void InputFilesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        => ShowSelectedPreview();
+    {
+        OcrTextBox?.Clear();
+        ShowSelectedPreview();
+    }
 
     private void MoveUp_Click(object sender, RoutedEventArgs e)
     {
@@ -187,6 +199,7 @@ public partial class MainWindow : Window
 
         page.RotateCounterClockwise();
         InvalidateProcessed(page);
+        OcrTextBox.Clear();
         RefreshPages(page);
     }
 
@@ -199,6 +212,7 @@ public partial class MainWindow : Window
 
         page.RotateClockwise();
         InvalidateProcessed(page);
+        OcrTextBox.Clear();
         RefreshPages(page);
     }
 
@@ -224,8 +238,9 @@ public partial class MainWindow : Window
         }
 
         _showProcessed = false;
+        OcrTextBox.Clear();
         RefreshPages(next);
-        StatusText.Text = $"Stage 3: у документі {_document.Count} стор.";
+        StatusText.Text = $"Stage 4: у документі {_document.Count} стор.";
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
@@ -233,8 +248,9 @@ public partial class MainWindow : Window
         _document.Clear();
         _processedPreviews.Clear();
         _showProcessed = false;
+        OcrTextBox.Clear();
         RefreshPages();
-        StatusText.Text = "Stage 3: документ очищено.";
+        StatusText.Text = "Stage 4: документ очищено.";
     }
 
     private void ShowOriginal_Click(object sender, RoutedEventArgs e)
@@ -253,7 +269,7 @@ public partial class MainWindow : Window
         if (!_processedPreviews.ContainsKey(page.Id))
         {
             _showProcessed = false;
-            StatusText.Text = "Stage 3: спочатку натисніть «Обробити» для цієї сторінки.";
+            StatusText.Text = "Stage 4: спочатку натисніть «Обробити» для цієї сторінки.";
             ShowSelectedPreview();
             return;
         }
@@ -267,18 +283,19 @@ public partial class MainWindow : Window
         if (GetSelectedPage() is not { } page ||
             !_processedPreviews.TryGetValue(page.Id, out var processed))
         {
-            StatusText.Text = "Stage 3: спочатку обробіть сторінку.";
+            StatusText.Text = "Stage 4: спочатку обробіть сторінку.";
             return;
         }
 
         var cropped = ImageProcessingService.ApplyDetectedCrop(processed);
         _processedPreviews[page.Id] = cropped;
         _showProcessed = true;
+        OcrTextBox.Clear();
         ShowSelectedPreview();
 
         StatusText.Text = cropped.CropApplied
-            ? $"Stage 3: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
-            : "Stage 3: межі збігаються з повним кадром.";
+            ? $"Stage 4: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
+            : "Stage 4: межі збігаються з повним кадром.";
     }
 
     private void ResetCrop_Click(object sender, RoutedEventArgs e)
@@ -293,8 +310,9 @@ public partial class MainWindow : Window
             ImageProcessingService.ResetDetectedCrop(processed);
 
         _showProcessed = true;
+        OcrTextBox.Clear();
         ShowSelectedPreview();
-        StatusText.Text = "Stage 3: показано повний оброблений кадр.";
+        StatusText.Text = "Stage 4: показано повний оброблений кадр.";
     }
 
     private async void ProcessSelected_Click(object sender, RoutedEventArgs e)
@@ -305,7 +323,7 @@ public partial class MainWindow : Window
         }
 
         _isProcessing = true;
-        StatusText.Text = "Stage 3: обробка сторінки…";
+        StatusText.Text = "Stage 4: обробка сторінки…";
 
         try
         {
@@ -317,10 +335,11 @@ public partial class MainWindow : Window
 
             _processedPreviews[page.Id] = processed;
             _showProcessed = true;
+            OcrTextBox.Clear();
             ShowSelectedPreview();
 
             StatusText.Text =
-                $"Stage 3: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
+                $"Stage 4: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
         }
         catch (Exception ex)
         {
@@ -334,7 +353,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 3: помилка обробки сторінки.";
+            StatusText.Text = "Stage 4: помилка обробки сторінки.";
         }
         finally
         {
@@ -342,25 +361,84 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Digitize_Click(object sender, RoutedEventArgs e)
+    private async void Digitize_Click(object sender, RoutedEventArgs e)
     {
-        if (_document.Count == 0)
+        if (_isOcrRunning || GetSelectedPage() is not { } page)
         {
-            MessageBox.Show(
-                this,
-                "Спочатку додайте фото, скан або PDF-документ.",
-                "ОЦИФРОВКА",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            if (_document.Count == 0)
+            {
+                MessageBox.Show(
+                    this,
+                    "Спочатку додайте фото, скан або PDF-документ.",
+                    "ОЦИФРОВКА",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+
             return;
         }
 
-        MessageBox.Show(
-            this,
-            $"Документ підготовлено: {_document.Count} стор. Preprocessing уже можна перевіряти для кожної сторінки. OCR буде підключено після завершення Stage 3.",
-            "ОЦИФРОВКА — Stage 3",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        if (!TesseractRuntimeLocator.IsRuntimeAvailable(AppContext.BaseDirectory))
+        {
+            MessageBox.Show(
+                this,
+                "Локальний Tesseract runtime відсутній у portable-збірці. Перевірте папку Engine\\OCR.",
+                "ОЦИФРОВКА — OCR",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var language = OcrLanguageComboBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            language = "ukr";
+        }
+
+        _isOcrRunning = true;
+        DigitizeButton.IsEnabled = false;
+        StatusText.Text = $"Stage 4: OCR {language}…";
+
+        try
+        {
+            BitmapSource inputBitmap =
+                _showProcessed && _processedPreviews.TryGetValue(page.Id, out var processed)
+                    ? processed.Image
+                    : ImagePreviewLoader.Load(page);
+
+            var inputPath = await OcrInputMaterializer.SavePngAsync(
+                inputBitmap,
+                page.Id,
+                AppContext.BaseDirectory);
+
+            var engine = new TesseractOcrEngine(AppContext.BaseDirectory);
+            var result = await engine.RecognizeAsync(
+                new OcrRequest(
+                    FilePath: inputPath,
+                    Language: language,
+                    Profile: "auto"));
+
+            OcrTextBox.Text = result.Text;
+
+            StatusText.Text =
+                $"Stage 4: OCR завершено · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "ОЦИФРОВКА — OCR",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            StatusText.Text = "Stage 4: OCR завершився помилкою.";
+        }
+        finally
+        {
+            _isOcrRunning = false;
+            DigitizeButton.IsEnabled = true;
+        }
     }
 
     private DocumentPage? GetSelectedPage() => InputFilesList.SelectedItem as DocumentPage;
@@ -380,6 +458,75 @@ public partial class MainWindow : Window
     {
         _processedPreviews.Remove(page.Id);
         _showProcessed = false;
+    }
+
+    private void RefreshOcrLanguages()
+    {
+        var tessdata = TesseractRuntimeLocator.GetTessdataPath(AppContext.BaseDirectory);
+        var installed = TesseractLanguageCatalog
+            .GetInstalledLanguages(tessdata)
+            .Select(language => language.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var options = new List<string>();
+
+        foreach (var preferred in new[] { "ukr", "eng", "rus", "pol", "deu" })
+        {
+            if (installed.Contains(preferred))
+            {
+                options.Add(preferred);
+            }
+        }
+
+        options.AddRange(
+            installed
+                .Where(code => !options.Contains(code, StringComparer.OrdinalIgnoreCase))
+                .OrderBy(code => code, StringComparer.OrdinalIgnoreCase));
+
+        AddCombination(options, installed, "ukr", "eng");
+        AddCombination(options, installed, "ukr", "rus");
+        AddCombination(options, installed, "ukr", "eng", "rus");
+
+        OcrLanguageComboBox.ItemsSource = options;
+
+        if (installed.Contains("ukr") && installed.Contains("eng"))
+        {
+            OcrLanguageComboBox.Text = "ukr+eng";
+        }
+        else if (installed.Contains("ukr"))
+        {
+            OcrLanguageComboBox.Text = "ukr";
+        }
+        else if (options.Count > 0)
+        {
+            OcrLanguageComboBox.Text = options[0];
+        }
+        else
+        {
+            OcrLanguageComboBox.Text = "ukr";
+        }
+
+        if (TesseractRuntimeLocator.IsRuntimeAvailable(AppContext.BaseDirectory))
+        {
+            StatusText.Text =
+                $"Stage 4: OCR runtime готовий · мов {installed.Count}";
+        }
+        else
+        {
+            StatusText.Text =
+                "Stage 4: OCR runtime буде доступний у portable-збірці.";
+        }
+    }
+
+    private static void AddCombination(
+        ICollection<string> options,
+        ISet<string> installed,
+        params string[] codes)
+    {
+        if (codes.All(installed.Contains))
+        {
+            options.Add(string.Join('+', codes));
+        }
     }
 
     private void RefreshPages(DocumentPage? preferredSelection = null)
