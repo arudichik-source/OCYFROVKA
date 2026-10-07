@@ -14,5 +14,6 @@
     <ProjectReference Include="..\Ocyfrovka.Ocr.Tesseract\Ocyfrovka.Ocr.Tesseract.csproj" />
     <ProjectReference Include="..\Ocyfrovka.Layout\Ocyfrovka.Layout.csproj" />
     <ProjectReference Include="..\Ocyfrovka.Review\Ocyfrovka.Review.csproj" />
+    <ProjectReference Include="..\Ocyfrovka.Dictionary\Ocyfrovka.Dictionary.csproj" />
   </ItemGroup>
 </Project>

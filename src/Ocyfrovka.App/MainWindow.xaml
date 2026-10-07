@@ -193,6 +193,8 @@
                                     <WrapPanel Grid.Column="1" Margin="8,0,0,0">
                                         <Button Content="Підтвердити" Click="ConfirmReviewCell_Click" Padding="9,5" Margin="2"/>
                                         <Button Content="Підтвердити все" Click="ConfirmAllReviewCells_Click" Padding="9,5" Margin="2"/>
+                                        <Button Content="Імпорт довідника" Click="ImportDictionary_Click" Padding="9,5" Margin="2"/>
+                                        <Button Content="Довідник" Click="ApplyDictionary_Click" Padding="9,5" Margin="2"/>
                                         <Button Content="Прийняти пропозицію" Click="AcceptReviewSuggestion_Click" Padding="9,5" Margin="2"/>
                                         <Button Content="Помилка" Click="MarkReviewCellError_Click" Padding="9,5" Margin="2"/>
                                         <Button Content="До OCR" Click="ResetReviewCell_Click" Padding="9,5" Margin="2"/>

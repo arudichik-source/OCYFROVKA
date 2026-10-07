@@ -4,6 +4,7 @@ using Ocyfrovka.App.Review;
 using Ocyfrovka.Core.Documents;
 using Ocyfrovka.Core.Input;
 using Ocyfrovka.Core.Ocr;
+using Ocyfrovka.Dictionary;
 using Ocyfrovka.Imaging;
 using Ocyfrovka.Layout;
 using Ocyfrovka.Review;
@@ -76,7 +77,7 @@ public partial class MainWindow : Window
     private async Task AddFilesAsync(IEnumerable<string> paths)
     {
         _isImporting = true;
-        StatusText.Text = "Stage 6: імпорт файлів…";
+        StatusText.Text = "Stage 7: імпорт файлів…";
 
         try
         {
@@ -147,8 +148,8 @@ public partial class MainWindow : Window
             }
 
             StatusText.Text = added > 0
-                ? $"Stage 6: у документі {_document.Count} стор."
-                : "Stage 6: нових сторінок не додано.";
+                ? $"Stage 7: у документі {_document.Count} стор."
+                : "Stage 7: нових сторінок не додано.";
 
             if (unsupported > 0 || errors.Count > 0)
             {
@@ -265,7 +266,7 @@ public partial class MainWindow : Window
         _showProcessed = false;
         ClearOcrOutput();
         RefreshPages(next);
-        StatusText.Text = $"Stage 6: у документі {_document.Count} стор.";
+        StatusText.Text = $"Stage 7: у документі {_document.Count} стор.";
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
@@ -277,7 +278,7 @@ public partial class MainWindow : Window
         _showProcessed = false;
         ClearOcrOutput();
         RefreshPages();
-        StatusText.Text = "Stage 6: документ очищено.";
+        StatusText.Text = "Stage 7: документ очищено.";
     }
 
     private void ShowOriginal_Click(object sender, RoutedEventArgs e)
@@ -296,7 +297,7 @@ public partial class MainWindow : Window
         if (!_processedPreviews.ContainsKey(page.Id))
         {
             _showProcessed = false;
-            StatusText.Text = "Stage 6: спочатку натисніть «Обробити» для цієї сторінки.";
+            StatusText.Text = "Stage 7: спочатку натисніть «Обробити» для цієї сторінки.";
             ShowSelectedPreview();
             return;
         }
@@ -310,7 +311,7 @@ public partial class MainWindow : Window
         if (GetSelectedPage() is not { } page ||
             !_processedPreviews.TryGetValue(page.Id, out var processed))
         {
-            StatusText.Text = "Stage 6: спочатку обробіть сторінку.";
+            StatusText.Text = "Stage 7: спочатку обробіть сторінку.";
             return;
         }
 
@@ -321,8 +322,8 @@ public partial class MainWindow : Window
         ShowSelectedPreview();
 
         StatusText.Text = cropped.CropApplied
-            ? $"Stage 6: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
-            : "Stage 6: межі збігаються з повним кадром.";
+            ? $"Stage 7: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
+            : "Stage 7: межі збігаються з повним кадром.";
     }
 
     private void ResetCrop_Click(object sender, RoutedEventArgs e)
@@ -339,7 +340,7 @@ public partial class MainWindow : Window
         _showProcessed = true;
         ClearOcrOutput();
         ShowSelectedPreview();
-        StatusText.Text = "Stage 6: показано повний оброблений кадр.";
+        StatusText.Text = "Stage 7: показано повний оброблений кадр.";
     }
 
     private async void ProcessSelected_Click(object sender, RoutedEventArgs e)
@@ -350,7 +351,7 @@ public partial class MainWindow : Window
         }
 
         _isProcessing = true;
-        StatusText.Text = "Stage 6: обробка сторінки…";
+        StatusText.Text = "Stage 7: обробка сторінки…";
 
         try
         {
@@ -366,7 +367,7 @@ public partial class MainWindow : Window
             ShowSelectedPreview();
 
             StatusText.Text =
-                $"Stage 6: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
+                $"Stage 7: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
         }
         catch (Exception ex)
         {
@@ -380,7 +381,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 6: помилка обробки сторінки.";
+            StatusText.Text = "Stage 7: помилка обробки сторінки.";
         }
         finally
         {
@@ -424,7 +425,7 @@ public partial class MainWindow : Window
 
         _isOcrRunning = true;
         DigitizeButton.IsEnabled = false;
-        StatusText.Text = $"Stage 6: OCR {language}…";
+        StatusText.Text = $"Stage 7: OCR {language}…";
 
         try
         {
@@ -450,7 +451,7 @@ public partial class MainWindow : Window
             ShowStructuredLayout(page.Id, result.Words);
 
             StatusText.Text =
-                $"Stage 6: OCR + структура завершені · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
+                $"Stage 7: OCR + структура завершені · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
         }
         catch (Exception ex)
         {
@@ -461,7 +462,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 6: OCR завершився помилкою.";
+            StatusText.Text = "Stage 7: OCR завершився помилкою.";
         }
         finally
         {
@@ -661,7 +662,7 @@ public partial class MainWindow : Window
         if (_selectedReviewCell is not null)
         {
             StatusText.Text =
-                $"Stage 6: клітинка R{_selectedReviewCell.RowIndex + 1}C{_selectedReviewCell.ColumnIndex + 1} · " +
+                $"Stage 7: клітинка R{_selectedReviewCell.RowIndex + 1}C{_selectedReviewCell.ColumnIndex + 1} · " +
                 $"{_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}%";
         }
     }
@@ -670,7 +671,7 @@ public partial class MainWindow : Window
     {
         if (_selectedReviewCell is null)
         {
-            StatusText.Text = "Stage 6: виберіть клітинку для підтвердження.";
+            StatusText.Text = "Stage 7: виберіть клітинку для підтвердження.";
             return;
         }
 
@@ -684,26 +685,133 @@ public partial class MainWindow : Window
         if (GetSelectedPage() is not { } page ||
             !_reviewSessions.TryGetValue(page.Id, out var session))
         {
-            StatusText.Text = "Stage 6: немає таблиці для підтвердження.";
+            StatusText.Text = "Stage 7: немає таблиці для підтвердження.";
             return;
         }
 
         session.ConfirmAll();
         ShowReviewSession(session);
-        StatusText.Text = "Stage 6: усі клітинки поточної таблиці підтверджено.";
+        StatusText.Text = "Stage 7: усі клітинки поточної таблиці підтверджено.";
+    }
+
+    private void ImportDictionary_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Multiselect = false,
+            Filter = "JSON-довідник|*.json|Усі файли|*.*"
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var catalog = DictionaryLoader.Load(dialog.FileName);
+
+            var targetPath = Path.Combine(
+                AppContext.BaseDirectory,
+                "Data",
+                "Dictionaries",
+                "nomenclature.json");
+
+            var sourceFullPath = Path.GetFullPath(dialog.FileName);
+            var targetFullPath = Path.GetFullPath(targetPath);
+
+            if (!string.Equals(
+                    sourceFullPath,
+                    targetFullPath,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                Directory.CreateDirectory(
+                    Path.GetDirectoryName(targetFullPath)!);
+
+                File.Copy(
+                    sourceFullPath,
+                    targetFullPath,
+                    overwrite: true);
+            }
+
+            StatusText.Text =
+                $"Stage 7: довідник імпортовано · записів {catalog.Entries.Count}.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "ОЦИФРОВКА — імпорт довідника",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            StatusText.Text = "Stage 7: імпорт довідника не виконано.";
+        }
+    }
+
+    private void ApplyDictionary_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedPage() is not { } page ||
+            !_reviewSessions.TryGetValue(page.Id, out var session))
+        {
+            StatusText.Text = "Stage 7: спочатку виконайте OCR і реконструкцію таблиці.";
+            return;
+        }
+
+        try
+        {
+            var dictionaryPath = Path.Combine(
+                AppContext.BaseDirectory,
+                "Data",
+                "Dictionaries",
+                "nomenclature.json");
+
+            var catalog = DictionaryLoader.Load(dictionaryPath);
+
+            if (catalog.Entries.Count == 0)
+            {
+                StatusText.Text =
+                    "Stage 7: локальний довідник nomenclature.json поки порожній.";
+                return;
+            }
+
+            var result = SmartCorrectionService.ApplyNomenclatureDictionary(
+                session,
+                catalog);
+
+            ShowReviewSession(session);
+
+            StatusText.Text =
+                $"Stage 7: довідник · авто {result.AutoCorrected} · " +
+                $"пропозицій {result.Suggested} · " +
+                $"неоднозначних {result.Ambiguous} · " +
+                $"захищених {result.Protected}.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "ОЦИФРОВКА — довідник",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            StatusText.Text = "Stage 7: помилка читання локального довідника.";
+        }
     }
 
     private void AcceptReviewSuggestion_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedReviewCell is null)
         {
-            StatusText.Text = "Stage 6: виберіть клітинку з пропозицією.";
+            StatusText.Text = "Stage 7: виберіть клітинку з пропозицією.";
             return;
         }
 
         if (!_selectedReviewCell.HasSuggestion)
         {
-            StatusText.Text = "Stage 6: для вибраної клітинки немає активної пропозиції.";
+            StatusText.Text = "Stage 7: для вибраної клітинки немає активної пропозиції.";
             return;
         }
 
@@ -716,7 +824,7 @@ public partial class MainWindow : Window
     {
         if (_selectedReviewCell is null)
         {
-            StatusText.Text = "Stage 6: виберіть проблемну клітинку.";
+            StatusText.Text = "Stage 7: виберіть проблемну клітинку.";
             return;
         }
 
@@ -729,7 +837,7 @@ public partial class MainWindow : Window
     {
         if (_selectedReviewCell is null)
         {
-            StatusText.Text = "Stage 6: виберіть клітинку.";
+            StatusText.Text = "Stage 7: виберіть клітинку.";
             return;
         }
 
@@ -767,13 +875,13 @@ public partial class MainWindow : Window
         if (_selectedReviewCell is not null)
         {
             StatusText.Text =
-                $"Stage 6: {_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}% · " +
+                $"Stage 7: {_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}% · " +
                 $"документ: {documentState}";
             return;
         }
 
         StatusText.Text =
-            $"Stage 6: документ {documentState} · " +
+            $"Stage 7: документ {documentState} · " +
             $"підтверджено {summary.ConfirmedCells}/{summary.TotalCells} · " +
             $"помилок {summary.ErrorCells}.";
     }
@@ -855,12 +963,12 @@ public partial class MainWindow : Window
         if (TesseractRuntimeLocator.IsRuntimeAvailable(AppContext.BaseDirectory))
         {
             StatusText.Text =
-                $"Stage 6: OCR runtime готовий · мов {installed.Count}";
+                $"Stage 7: OCR runtime готовий · мов {installed.Count}";
         }
         else
         {
             StatusText.Text =
-                "Stage 6: OCR runtime буде доступний у portable-збірці.";
+                "Stage 7: OCR runtime буде доступний у portable-збірці.";
         }
     }
 
