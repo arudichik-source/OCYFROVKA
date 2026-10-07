@@ -1,16 +1,19 @@
 using Ocyfrovka.Imaging;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace Ocyfrovka.App.Services;
 
 internal sealed record ProcessedPreview(
+    BitmapSource FullImage,
     BitmapSource Image,
     ImageQualityReport Quality,
     int OtsuThreshold,
     double DeskewAngle,
     ImageRect ContentBounds,
-    PreprocessingProfile Profile);
+    PreprocessingProfile Profile,
+    bool CropApplied);
 
 internal static class ImageProcessingService
 {
@@ -25,12 +28,69 @@ internal static class ImageProcessingService
         var bitmap = ToBitmapSource(result.Image);
 
         return new ProcessedPreview(
-            bitmap,
-            result.Quality,
-            result.OtsuThreshold,
-            result.DeskewAngle,
-            result.ContentBounds,
-            result.Profile);
+            FullImage: bitmap,
+            Image: bitmap,
+            Quality: result.Quality,
+            OtsuThreshold: result.OtsuThreshold,
+            DeskewAngle: result.DeskewAngle,
+            ContentBounds: result.ContentBounds,
+            Profile: result.Profile,
+            CropApplied: false);
+    }
+
+    public static ProcessedPreview ApplyDetectedCrop(ProcessedPreview preview)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+
+        if (preview.CropApplied)
+        {
+            return preview;
+        }
+
+        var bounds = preview.ContentBounds;
+        if (bounds.IsEmpty ||
+            bounds.X < 0 ||
+            bounds.Y < 0 ||
+            bounds.Right > preview.FullImage.PixelWidth ||
+            bounds.Bottom > preview.FullImage.PixelHeight)
+        {
+            throw new InvalidOperationException(
+                "Виявлені межі документа виходять за розмір обробленого зображення.");
+        }
+
+        if (bounds.X == 0 &&
+            bounds.Y == 0 &&
+            bounds.Width == preview.FullImage.PixelWidth &&
+            bounds.Height == preview.FullImage.PixelHeight)
+        {
+            return preview;
+        }
+
+        var cropped = new CroppedBitmap(
+            preview.FullImage,
+            new Int32Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height));
+
+        if (cropped.CanFreeze)
+        {
+            cropped.Freeze();
+        }
+
+        return preview with
+        {
+            Image = cropped,
+            CropApplied = true
+        };
+    }
+
+    public static ProcessedPreview ResetDetectedCrop(ProcessedPreview preview)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+
+        return preview with
+        {
+            Image = preview.FullImage,
+            CropApplied = false
+        };
     }
 
     private static GrayImage ToGrayImage(BitmapSource source)
