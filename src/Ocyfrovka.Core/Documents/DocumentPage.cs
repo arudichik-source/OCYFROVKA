@@ -7,6 +7,7 @@ public sealed class DocumentPage
         int sourceFrameIndex,
         int pixelWidth,
         int pixelHeight,
+        string? renderedImagePath = null,
         Guid? id = null)
     {
         if (string.IsNullOrWhiteSpace(sourcePath))
@@ -34,6 +35,7 @@ public sealed class DocumentPage
         SourceFrameIndex = sourceFrameIndex;
         PixelWidth = pixelWidth;
         PixelHeight = pixelHeight;
+        RenderedImagePath = renderedImagePath;
     }
 
     public Guid Id { get; }
@@ -46,13 +48,22 @@ public sealed class DocumentPage
 
     public int PixelHeight { get; }
 
+    public string? RenderedImagePath { get; }
+
+    public string ImagePath => RenderedImagePath ?? SourcePath;
+
+    public bool IsPdfPage =>
+        string.Equals(Path.GetExtension(SourcePath), ".pdf", StringComparison.OrdinalIgnoreCase);
+
     public int RotationDegrees { get; private set; }
 
     public string FileName => Path.GetFileName(SourcePath);
 
-    public string DisplayName => SourceFrameIndex == 0
-        ? FileName
-        : $"{FileName} — кадр {SourceFrameIndex + 1}";
+    public string DisplayName => IsPdfPage
+        ? $"{FileName} — стор. {SourceFrameIndex + 1}"
+        : SourceFrameIndex == 0
+            ? FileName
+            : $"{FileName} — кадр {SourceFrameIndex + 1}";
 
     public void RotateClockwise() => RotationDegrees = NormalizeRotation(RotationDegrees + 90);
 
