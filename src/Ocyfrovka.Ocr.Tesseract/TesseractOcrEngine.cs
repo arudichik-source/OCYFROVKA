@@ -33,6 +33,14 @@ public sealed class TesseractOcrEngine : IOcrEngine
             throw new FileNotFoundException("Вхідний файл OCR не знайдено.", request.FilePath);
         }
 
+        var missingLanguages = TesseractLanguageCatalog.GetMissingLanguages(tessdata, request.Language);
+        if (missingLanguages.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Відсутні OCR-моделі мов: {string.Join(", ", missingLanguages)}. " +
+                $"Додайте відповідні *.traineddata у {tessdata}");
+        }
+
         var arguments = new[]
         {
             Quote(request.FilePath),
