@@ -28,56 +28,56 @@
 - [x] Stage 3 portable build verification.
 
 ## Stage 4 — Local OCR
-- [x] Pin Tesseract Windows x64 runtime to 5.5.3.20260724.
-- [x] Verify runtime installer SHA256 during every portable build.
-- [x] Pin and package Ukrainian / English / Russian / Polish / German + OSD traineddata.
-- [x] Verify every traineddata SHA256 during every portable build.
-- [x] Dynamic installed-language catalog and multi-language expressions.
-- [x] Editable UI language selector driven by installed models.
-- [x] Real `TesseractOcrEngine : IOcrEngine` execution.
-- [x] Materialize original/processed preview to private local PNG for OCR.
-- [x] TSV parser preserves OCR lines, confidence and word coordinates.
-- [x] OCR result panel in WPF.
-- [x] Runtime `--version` and `--list-langs` smoke checks in CI.
-- [x] Portable artifact contains runtime, DLL dependencies, models and licenses.
-- [x] Stage 4 portable build verification.
-
-## Stage 5 — Layout and table reconstruction
-- [x] Convert OCR words + coordinates into normalized text lines.
-- [x] Detect table-like row/column structure.
-- [x] Reconstruct cells from word geometry and spacing.
-- [x] Preserve source word confidence/provenance for reconstructed cells.
-- [x] Detect likely headers and data rows.
-- [x] Show raw OCR text and structured table preview in separate UI tabs.
-- [x] Regression tests for line/row/column reconstruction.
+- [x] Pinned Tesseract Windows runtime + six language models.
+- [x] Hash verification and runtime smoke tests.
+- [x] Dynamic language selection and real local OCR.
+- [x] OCR text/confidence/word coordinates.
 - [x] Portable build verification.
 
+## Stage 5 — Layout and table reconstruction
+- [x] OCR words → normalized lines.
+- [x] Row/column/cell reconstruction.
+- [x] Confidence/provenance preservation.
+- [x] Header detection and structured preview.
+- [x] Regression tests and portable build verification.
+
 ## Stage 6 — Review workflow
-- [x] Per-document and per-page review state.
-- [x] Per-cell states: Recognized / CorrectedAutomatically / Suggested / CorrectedByUser / ConfirmedByUser / Error.
-- [x] Editable structured table without overwriting OCR source provenance.
-- [x] Confirm / confirm-all / error / reset-to-OCR / accept-suggestion actions.
-- [x] Low-confidence and review-state highlighting.
-- [x] Preserve manual and confirmed values across OCR re-runs.
-- [x] Preserve per-page OCR text and review session when switching pages.
-- [x] Aggregate document review summary.
-- [x] Regression tests for state transitions, protected values and UI projection.
-- [x] Stage 6 portable build verification.
+- [x] Per-document/page/cell review state.
+- [x] Editable structured table with protected OCR provenance.
+- [x] Confirm / confirm-all / suggestion / error / reset actions.
+- [x] Low-confidence and state highlighting.
+- [x] Preserve manual/confirmed values across OCR re-runs.
+- [x] Regression tests and portable build verification.
 
 ## Stage 7 — Dictionaries and SmartCorrector
-- [ ] Local dictionary model and JSON loader.
-- [ ] Text/name normalization.
-- [ ] Cyrillic/Latin lookalike normalization.
-- [ ] Context-safe numeric lookalike correction.
-- [ ] Levenshtein/token/fuzzy matching.
-- [ ] Suggestions with confidence; no silent uncertain correction.
-- [ ] Apply suggestions through Stage 6 review state.
-- [ ] Deterministic tests.
+- [x] Local JSON dictionary model and loader.
+- [x] Runtime creation of private `Data/Dictionaries/nomenclature.json`.
+- [x] User import of JSON dictionary through UI.
+- [x] Indexed exact alias lookup for large catalogs.
+- [x] Text/name normalization.
+- [x] Cyrillic/Latin visual-lookalike normalization for nomenclature.
+- [x] Numeric lookalike correction only in explicit numeric context.
+- [x] Levenshtein + token similarity.
+- [x] Important numeric-token mismatch penalty.
+- [x] Exact unambiguous alias may auto-correct.
+- [x] Fuzzy matches become suggestions only.
+- [x] Equal/ambiguous candidates are never chosen automatically.
+- [x] Protected user/confirmed cells are never overwritten.
+- [x] SmartCorrector integrated with Stage 6 review.
+- [x] Regression tests and portable build verification.
 
-## Stage 8+
-- [ ] SQLite persistence and correction memory.
+## Stage 8 — SQLite persistence and correction memory
+- [ ] Portable SQLite database initialization.
+- [ ] Persist document/page/review state.
+- [ ] Persist confirmed/manual cell values.
+- [ ] Correction-memory table.
+- [ ] Restore unfinished review after restart.
+- [ ] Autosave and schema migration foundation.
+- [ ] Regression tests.
+
+## Stage 9+
 - [ ] XLSX export.
 - [ ] Queue/background processing.
-- [ ] Optional interactive four-corner editor for manual perspective correction.
+- [ ] Optional interactive four-corner editor.
 - [ ] Regression dataset and production check.
 - [ ] Portable RC.
