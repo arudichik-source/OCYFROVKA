@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private readonly DigitizationDocument _document = new();
     private readonly Dictionary<Guid, ProcessedPreview> _processedPreviews = [];
     private readonly Dictionary<Guid, ReviewTableSession> _reviewSessions = [];
+    private readonly Dictionary<Guid, string> _ocrTextByPage = [];
     private ReviewGridCellViewModel? _selectedReviewCell;
 
     private bool _isImporting;
@@ -167,8 +168,23 @@ public partial class MainWindow : Window
 
     private void InputFilesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        OcrTextBox?.Clear();
+        ClearOcrOutput();
         ShowSelectedPreview();
+
+        if (GetSelectedPage() is not { } page)
+        {
+            return;
+        }
+
+        if (_ocrTextByPage.TryGetValue(page.Id, out var text))
+        {
+            OcrTextBox.Text = text;
+        }
+
+        if (_reviewSessions.TryGetValue(page.Id, out var session))
+        {
+            ShowReviewSession(session);
+        }
     }
 
     private void MoveUp_Click(object sender, RoutedEventArgs e)
@@ -238,6 +254,7 @@ public partial class MainWindow : Window
         _document.Remove(page.Id);
         _processedPreviews.Remove(page.Id);
         _reviewSessions.Remove(page.Id);
+        _ocrTextByPage.Remove(page.Id);
 
         DocumentPage? next = null;
         if (_document.Count > 0)
@@ -256,6 +273,7 @@ public partial class MainWindow : Window
         _document.Clear();
         _processedPreviews.Clear();
         _reviewSessions.Clear();
+        _ocrTextByPage.Clear();
         _showProcessed = false;
         ClearOcrOutput();
         RefreshPages();
@@ -427,6 +445,7 @@ public partial class MainWindow : Window
                     Language: language,
                     Profile: "auto"));
 
+            _ocrTextByPage[page.Id] = result.Text;
             OcrTextBox.Text = result.Text;
             ShowStructuredLayout(page.Id, result.Words);
 
