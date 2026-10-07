@@ -19,10 +19,16 @@ dotnet restore (Join-Path $root 'src/Ocyfrovka.App/Ocyfrovka.App.csproj')
 Assert-LastExitCode 'App restore'
 
 dotnet restore (Join-Path $root 'tests/Ocyfrovka.Core.Tests/Ocyfrovka.Core.Tests.csproj')
-Assert-LastExitCode 'Tests restore'
+Assert-LastExitCode 'Core tests restore'
+
+dotnet restore (Join-Path $root 'tests/Ocyfrovka.App.Tests/Ocyfrovka.App.Tests.csproj')
+Assert-LastExitCode 'Windows integration tests restore'
 
 dotnet test (Join-Path $root 'tests/Ocyfrovka.Core.Tests/Ocyfrovka.Core.Tests.csproj') -c Release --no-restore
-Assert-LastExitCode 'Unit tests'
+Assert-LastExitCode 'Core unit tests'
+
+dotnet test (Join-Path $root 'tests/Ocyfrovka.App.Tests/Ocyfrovka.App.Tests.csproj') -c Release --no-restore
+Assert-LastExitCode 'Windows integration tests'
 
 dotnet publish (Join-Path $root 'src/Ocyfrovka.App/Ocyfrovka.App.csproj') `
   -c Release `
