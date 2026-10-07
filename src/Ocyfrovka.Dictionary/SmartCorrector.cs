@@ -134,11 +134,13 @@ public static partial class SmartCorrector
 
         var inputNumbers = NumericTokenRegex()
             .Matches(input)
+            .Cast<Match>()
             .Select(match => match.Value)
             .ToArray();
 
         var candidateNumbers = NumericTokenRegex()
             .Matches(candidate)
+            .Cast<Match>()
             .Select(match => match.Value)
             .ToArray();
 
