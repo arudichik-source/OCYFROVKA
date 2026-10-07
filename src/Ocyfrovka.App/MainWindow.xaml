@@ -180,17 +180,31 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock x:Name="LayoutStatusText"
-                                           Text="Структура ще не аналізувалась."
-                                           Margin="2,0,2,6"
-                                           Foreground="{StaticResource MutedTextBrush}"
-                                           TextWrapping="Wrap"/>
+                                <Grid Margin="2,0,2,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="LayoutStatusText"
+                                               Text="Структура ще не аналізувалась."
+                                               VerticalAlignment="Center"
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               TextWrapping="Wrap"/>
+                                    <WrapPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <Button Content="Підтвердити" Click="ConfirmReviewCell_Click" Padding="9,5" Margin="2"/>
+                                        <Button Content="Помилка" Click="MarkReviewCellError_Click" Padding="9,5" Margin="2"/>
+                                        <Button Content="До OCR" Click="ResetReviewCell_Click" Padding="9,5" Margin="2"/>
+                                    </WrapPanel>
+                                </Grid>
                                 <DataGrid x:Name="StructuredTableGrid"
                                           Grid.Row="1"
-                                          IsReadOnly="True"
-                                          AutoGenerateColumns="True"
+                                          IsReadOnly="False"
+                                          AutoGenerateColumns="False"
                                           CanUserAddRows="False"
                                           CanUserDeleteRows="False"
+                                          SelectionUnit="Cell"
+                                          SelectionMode="Single"
+                                          SelectedCellsChanged="StructuredTableGrid_SelectedCellsChanged"
                                           HeadersVisibility="Column"
                                           GridLinesVisibility="All"
                                           Background="#151820"
@@ -212,7 +226,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="StatusText" Text="Stage 4: локальний OCR" VerticalAlignment="Center"
+                <TextBlock x:Name="StatusText" Text="Stage 6: перевірка OCR" VerticalAlignment="Center"
                            Foreground="{StaticResource MutedTextBrush}"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
                     <TextBlock Text="Мова OCR:" VerticalAlignment="Center" Margin="0,0,7,0"/>
