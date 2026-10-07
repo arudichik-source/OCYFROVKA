@@ -28,6 +28,15 @@ internal sealed class ReviewGridCellViewModel : INotifyPropertyChanged
 
     public bool IsError => _cell.State == ReviewCellState.Error;
 
+    public bool HasSuggestion =>
+        _cell.State == ReviewCellState.Suggested &&
+        !string.IsNullOrWhiteSpace(_cell.SuggestedText);
+
+    public bool IsUserCorrected =>
+        _cell.State == ReviewCellState.CorrectedByUser;
+
+    public string? SuggestedText => _cell.SuggestedText;
+
     public string StateText => _cell.State switch
     {
         ReviewCellState.Recognized => "Розпізнано",
@@ -67,6 +76,12 @@ internal sealed class ReviewGridCellViewModel : INotifyPropertyChanged
         RaiseAll();
     }
 
+    public void AcceptSuggestion()
+    {
+        _cell.AcceptSuggestion();
+        RaiseAll();
+    }
+
     public void MarkError()
     {
         _cell.MarkError();
@@ -88,6 +103,9 @@ internal sealed class ReviewGridCellViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(IsLowConfidence));
         OnPropertyChanged(nameof(IsConfirmed));
         OnPropertyChanged(nameof(IsError));
+        OnPropertyChanged(nameof(HasSuggestion));
+        OnPropertyChanged(nameof(IsUserCorrected));
+        OnPropertyChanged(nameof(SuggestedText));
         OnPropertyChanged(nameof(StateText));
         OnPropertyChanged(nameof(Tooltip));
     }
