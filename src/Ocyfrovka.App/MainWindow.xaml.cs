@@ -554,6 +554,8 @@ public partial class MainWindow : Window
         var lowConfidencePath = $"Cells[{columnIndex}].IsLowConfidence";
         var confirmedPath = $"Cells[{columnIndex}].IsConfirmed";
         var errorPath = $"Cells[{columnIndex}].IsError";
+        var suggestionPath = $"Cells[{columnIndex}].HasSuggestion";
+        var correctedPath = $"Cells[{columnIndex}].IsUserCorrected";
         var tooltipPath = $"Cells[{columnIndex}].Tooltip";
 
         var elementStyle = new Style(typeof(TextBlock));
@@ -583,6 +585,26 @@ public partial class MainWindow : Window
             TextBlock.BackgroundProperty,
             new SolidColorBrush(Color.FromRgb(24, 82, 54))));
         elementStyle.Triggers.Add(confirmedTrigger);
+
+        var suggestionTrigger = new DataTrigger
+        {
+            Binding = new Binding(suggestionPath),
+            Value = true
+        };
+        suggestionTrigger.Setters.Add(new Setter(
+            TextBlock.BackgroundProperty,
+            new SolidColorBrush(Color.FromRgb(54, 55, 103))));
+        elementStyle.Triggers.Add(suggestionTrigger);
+
+        var correctedTrigger = new DataTrigger
+        {
+            Binding = new Binding(correctedPath),
+            Value = true
+        };
+        correctedTrigger.Setters.Add(new Setter(
+            TextBlock.BackgroundProperty,
+            new SolidColorBrush(Color.FromRgb(49, 65, 94))));
+        elementStyle.Triggers.Add(correctedTrigger);
 
         var errorTrigger = new DataTrigger
         {
@@ -669,6 +691,25 @@ public partial class MainWindow : Window
         session.ConfirmAll();
         ShowReviewSession(session);
         StatusText.Text = "Stage 6: усі клітинки поточної таблиці підтверджено.";
+    }
+
+    private void AcceptReviewSuggestion_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedReviewCell is null)
+        {
+            StatusText.Text = "Stage 6: виберіть клітинку з пропозицією.";
+            return;
+        }
+
+        if (!_selectedReviewCell.HasSuggestion)
+        {
+            StatusText.Text = "Stage 6: для вибраної клітинки немає активної пропозиції.";
+            return;
+        }
+
+        _selectedReviewCell.AcceptSuggestion();
+        StructuredTableGrid.Items.Refresh();
+        RefreshReviewStatus();
     }
 
     private void MarkReviewCellError_Click(object sender, RoutedEventArgs e)
