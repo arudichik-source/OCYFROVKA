@@ -11,6 +11,7 @@ namespace Ocyfrovka.App;
 public partial class MainWindow : Window
 {
     private readonly DigitizationDocument _document = new();
+    private bool _isImporting;
 
     public MainWindow()
     {
@@ -18,8 +19,13 @@ public partial class MainWindow : Window
         RefreshPages();
     }
 
-    private void AddFiles_Click(object sender, RoutedEventArgs e)
+    private async void AddFiles_Click(object sender, RoutedEventArgs e)
     {
+        if (_isImporting)
+        {
+            return;
+        }
+
         var dialog = new OpenFileDialog
         {
             Multiselect = true,
@@ -28,104 +34,112 @@ public partial class MainWindow : Window
 
         if (dialog.ShowDialog(this) == true)
         {
-            AddFiles(dialog.FileNames);
+            await AddFilesAsync(dialog.FileNames);
         }
     }
 
-    private void Window_Drop(object sender, DragEventArgs e)
+    private async void Window_Drop(object sender, DragEventArgs e)
     {
+        if (_isImporting)
+        {
+            return;
+        }
+
         if (e.Data.GetData(DataFormats.FileDrop) is string[] paths)
         {
-            AddFiles(paths);
+            await AddFilesAsync(paths);
         }
     }
 
-    private void AddFiles(IEnumerable<string> paths)
+    private async Task AddFilesAsync(IEnumerable<string> paths)
     {
-        DocumentPage? lastAdded = null;
-        var added = 0;
-        var deferredPdf = 0;
-        var unsupported = 0;
-        var errors = new List<string>();
+        _isImporting = true;
+        StatusText.Text = "Stage 2: імпорт файлів…";
 
-        foreach (var path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
+        try
         {
-            if (!File.Exists(path))
-            {
-                continue;
-            }
+            DocumentPage? lastAdded = null;
+            var added = 0;
+            var unsupported = 0;
+            var errors = new List<string>();
 
-            switch (InputFileClassifier.GetKind(path))
+            foreach (var path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
             {
-                case InputFileKind.Image:
-                    try
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    IReadOnlyList<DocumentPage> pages = InputFileClassifier.GetKind(path) switch
                     {
-                        foreach (var page in ImagePageLoader.Load(path))
+                        InputFileKind.Image => ImagePageLoader.Load(path),
+                        InputFileKind.Pdf => await PdfPageLoader.LoadAsync(path, AppContext.BaseDirectory),
+                        _ => []
+                    };
+
+                    if (pages.Count == 0 && InputFileClassifier.GetKind(path) == InputFileKind.Unsupported)
+                    {
+                        unsupported++;
+                        continue;
+                    }
+
+                    foreach (var page in pages)
+                    {
+                        if (_document.AddPage(page))
                         {
-                            if (_document.AddPage(page))
-                            {
-                                added++;
-                                lastAdded = page;
-                            }
+                            added++;
+                            lastAdded = page;
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        errors.Add($"{Path.GetFileName(path)}: {ex.Message}");
-                    }
-
-                    break;
-
-                case InputFileKind.Pdf:
-                    deferredPdf++;
-                    break;
-
-                default:
-                    unsupported++;
-                    break;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add($"{Path.GetFileName(path)}: {ex.Message}");
+                }
             }
-        }
 
-        RefreshPages(lastAdded);
+            RefreshPages(lastAdded);
 
-        var notes = new List<string>();
-        if (added > 0)
-        {
-            notes.Add($"Додано сторінок: {added}.");
-        }
-
-        if (deferredPdf > 0)
-        {
-            notes.Add($"PDF поки відкладено: {deferredPdf}. Підтримка PDF буде додана наступним проходом Stage 2.");
-        }
-
-        if (unsupported > 0)
-        {
-            notes.Add($"Непідтримуваних файлів: {unsupported}.");
-        }
-
-        if (errors.Count > 0)
-        {
-            notes.Add("Помилки читання:");
-            notes.AddRange(errors.Take(5));
-            if (errors.Count > 5)
+            var notes = new List<string>();
+            if (added > 0)
             {
-                notes.Add($"...ще {errors.Count - 5}.");
+                notes.Add($"Додано сторінок: {added}.");
+            }
+
+            if (unsupported > 0)
+            {
+                notes.Add($"Непідтримуваних файлів: {unsupported}.");
+            }
+
+            if (errors.Count > 0)
+            {
+                notes.Add("Помилки читання:");
+                notes.AddRange(errors.Take(5));
+                if (errors.Count > 5)
+                {
+                    notes.Add($"...ще {errors.Count - 5}.");
+                }
+            }
+
+            StatusText.Text = added > 0
+                ? $"Stage 2: у документі {_document.Count} стор."
+                : "Stage 2: нових сторінок не додано.";
+
+            if (unsupported > 0 || errors.Count > 0)
+            {
+                MessageBox.Show(
+                    this,
+                    string.Join(Environment.NewLine, notes),
+                    "ОЦИФРОВКА — імпорт",
+                    MessageBoxButton.OK,
+                    errors.Count > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
             }
         }
-
-        StatusText.Text = added > 0
-            ? $"Stage 2: у документі {_document.Count} стор."
-            : "Stage 2: нових сторінок не додано.";
-
-        if (deferredPdf > 0 || unsupported > 0 || errors.Count > 0)
+        finally
         {
-            MessageBox.Show(
-                this,
-                string.Join(Environment.NewLine, notes),
-                "ОЦИФРОВКА — імпорт",
-                MessageBoxButton.OK,
-                errors.Count > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+            _isImporting = false;
         }
     }
 
@@ -217,7 +231,7 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(
                 this,
-                "Спочатку додайте зображення документа.",
+                "Спочатку додайте фото, скан або PDF-документ.",
                 "ОЦИФРОВКА",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
