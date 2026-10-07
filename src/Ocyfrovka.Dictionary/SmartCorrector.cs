@@ -88,13 +88,8 @@ public static partial class SmartCorrector
             .Select(entry =>
             {
                 var score = catalog
-                    .EnumerateForms()
-                    .Where(form => ReferenceEquals(form.Entry, entry) ||
-                                   string.Equals(
-                                       form.Entry.Canonical,
-                                       entry.Canonical,
-                                       StringComparison.Ordinal))
-                    .Select(form => Score(normalized, form.Form))
+                    .GetNormalizedForms(entry)
+                    .Select(form => Score(normalized, form))
                     .DefaultIfEmpty(0)
                     .Max();
 
