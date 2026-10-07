@@ -15,11 +15,22 @@ Engine/OCR/
   tessdata/
     ukr.traineddata
     eng.traineddata
+    rus.traineddata
+    pol.traineddata
+    deu.traineddata
     osd.traineddata
   LICENSES/
 ```
 
 OCYFROVKA will call the local `tesseract.exe` through a dedicated adapter. This keeps native dependencies isolated and makes a future engine swap possible without rewriting the UI.
+
+## Multilingual OCR
+
+Language support is data-driven. `TesseractLanguageCatalog` enumerates installed `*.traineddata` files at runtime. Any compatible language model copied into `Engine/OCR/tessdata` becomes available without rebuilding the application.
+
+The OCR adapter accepts Tesseract language expressions such as `ukr`, `eng`, or `ukr+eng`. Before launching Tesseract it validates that every requested model is present and returns a clear local error if a model is missing.
+
+The initial portable language pack is planned to include Ukrainian, English, Russian, Polish and German, plus OSD support. Additional language packs may be added later without changing the OCR adapter.
 
 ## What we reuse
 
