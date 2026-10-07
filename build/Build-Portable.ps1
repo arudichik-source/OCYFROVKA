@@ -39,6 +39,9 @@ dotnet publish (Join-Path $root 'src/Ocyfrovka.App/Ocyfrovka.App.csproj') `
   -o $publishDir
 Assert-LastExitCode 'Publish'
 
+& (Join-Path $PSScriptRoot 'Prepare-OcrRuntime.ps1') -Destination (Join-Path $publishDir 'Engine/OCR')
+Assert-LastExitCode 'OCR runtime preparation'
+
 @'
 ОЦИФРОВКА Portable x64
 

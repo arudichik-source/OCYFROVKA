@@ -2,103 +2,107 @@
 
 **Updated:** 2026-10-07  
 **Repository:** `arudichik-source/OCYFROVKA`  
-**Active branch:** `stage/03-preprocessing`  
-**Latest merged PR:** #2 — Stage 2: document input, image preview and local PDF import  
-**Open PR:** #3 — Stage 3: deterministic image preprocessing pipeline  
-**Green main commit after Stage 2:** `254128a668ac8821e13cc1720fe28f732fbf297f`  
-**Latest verified Stage 3 functional commit:** `d9369dfa7b7fb072ab0e5f1f419ff4ce5cb98178`
+**Active branch:** `stage/04-local-ocr`  
+**Latest merged PR:** #3 — Stage 3: deterministic image preprocessing pipeline  
+**Green main commit after Stage 3:** `76eca9c8c8191c7311ecd2f7cc921990f9acecb7`  
+**Latest verified Stage 4 functional commit:** `55181fc11a8ffcad0c8d04c572f9ffbd2d64b4d9`
 
 ## Purpose
 
-Read this file first in any continuation, then inspect `stage/03-preprocessing`, PR #3 if present, and the newest GitHub Actions run.
+Read this file first in any continuation, then inspect `stage/04-local-ocr`, its PR if present, and the newest GitHub Actions run.
 
 ## Fixed project decisions
 
 - Windows x64, C# / WPF / .NET 10.
-- Self-contained portable ZIP; no installer/admin rights required.
-- Local/offline base workflow; no required paid/cloud OCR services.
-- OCR remains replaceable through `IOcrEngine`; Tesseract/UB-Mannheim is the planned first runtime.
-- OCR is multilingual and discovers installed `*.traineddata` dynamically.
-- Runtime/private data must never enter the public repository.
-- Original photos/PDFs are never overwritten by preprocessing.
+- Self-contained portable ZIP; no installer/admin rights required on the user's PC.
+- Base operation is local/offline; no required OCR API keys or cloud services.
+- OCR remains replaceable behind `IOcrEngine`.
+- Original photos/PDFs are never overwritten.
+- Runtime/private document data must never enter the public repository.
+- Every third-party OCR binary/model used in a production portable build must be pinned and integrity-checked.
 
 ## Completed
 
-Stage 1 and Stage 2 are merged into `main` and green.
+Stages 1, 2 and 3 are merged into `main` and green.
 
-Stage 3 implementation is now complete for the preprocessing milestone in `stage/03-preprocessing`.
+## Stage 4 — implemented and verified
 
-## Stage 3 — implemented
-
-- independent `Ocyfrovka.Imaging` project;
-- immutable `GrayImage` model;
-- Auto, Grayscale, HighContrast, Binary, AdaptiveBinary, ShadowCorrected and Sharpened profiles;
-- histogram contrast stretch;
-- Otsu global threshold;
-- adaptive/local threshold for uneven lighting;
-- local illumination/shadow normalization;
-- 3×3 sharpen and median-denoise primitive;
-- OCR-oriented quality score and warnings;
-- automatic skew-angle estimation;
-- non-destructive deskew;
-- content/page-boundary detection;
-- deterministic crop primitive;
-- reversible detected-crop preview in WPF;
-- deterministic four-corner perspective correction using a solved projective homography and inverse bilinear sampling;
-- perspective validation for degenerate/out-of-frame input;
-- Original / Processed UI switch;
-- processing outside the UI thread;
-- processed preview cache invalidation after source-page rotation/removal;
-- original source files remain unchanged;
-- synthetic regression tests for deskew, crop, perspective, adaptive threshold and illumination normalization;
-- Windows integration tests for reversible crop preview.
-
-The interactive four-corner editor is intentionally listed as a later optional UI refinement. The perspective transform engine itself is implemented and tested, so it is not a blocker for Stage 4 OCR.
+- pinned Tesseract Windows x64 runtime `5.5.3.20260724`;
+- runtime installer SHA256 locked;
+- portable build performs a silent temporary install and copies runtime files into `Engine/OCR`;
+- `ukr`, `eng`, `rus`, `pol`, `deu` and `osd` are packaged;
+- all model source commits and SHA256 hashes are locked;
+- build rejects missing/unexpected hashes;
+- license files are copied into the portable package;
+- runtime smoke checks run `tesseract --version` and `--list-langs`;
+- dynamic language discovery at application startup;
+- editable language expression selector with common combinations;
+- real local `TesseractOcrEngine` execution;
+- process arguments use `ProcessStartInfo.ArgumentList`;
+- cancellation kills the OCR process tree;
+- original or processed preview can be materialized to a private PNG for OCR;
+- recognized text is shown inside the WPF UI;
+- TSV parser preserves lines, word confidence and word coordinates;
+- clear errors for missing runtime/models;
+- OCR input stays under `Workspace/Temp/OcrInput`.
 
 ## Latest verified CI
 
-Final PR #3 workflow before this handoff update:
+Strict locked Stage 4 workflow:
 
-- Run: `37617405571`
-- PR head tested: `e1876f1b1b0ad5671d21847018d710a4422f70e2`
+- Run: `37620614213`
+- Commit: `55181fc11a8ffcad0c8d04c572f9ffbd2d64b4d9`
 - Result: **SUCCESS**
-- Core/imaging tests: **43/43 PASS**
-- Windows integration tests: **4/4 PASS**
-- Total: **47/47 PASS**
+- Core/OCR/Imaging tests: **45/45 PASS**
+- Windows integration tests: **5/5 PASS**
+- Total: **50/50 PASS**
+- Tesseract reported: **v5.5.3.20260724**
+- Available bundled language models: **6**
 - Portable Windows x64 publish: **SUCCESS**
 - Artifact upload: **SUCCESS**
-- PR #3 merge state: **clean / mergeable**
+- Artifact: `OCYFROVKA_Portable_x64`
+- Artifact ID: `11481193899`
+- Artifact size: `166805119` bytes (~166.8 MB)
+
+## Pinned OCR model SHA256
+
+- `ukr` — `1277f6e3b6f707063a92d40e7678e7f57154e8414e328e340be9ee9275eea9c8`
+- `eng` — `8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba`
+- `rus` — `b617eb6830ffabaaa795dd87ea7fd251adfe9cf0efe05eb9a2e8128b7728d6b6`
+- `pol` — `e80cc4cefbdface06e9223f43f089556b9dcf104020fbc0a200f6863c57d4405`
+- `deu` — `8407331d6aa0229dc927685c01a7938fc5a641d1a9524f74838cdac599f0d06e`
+- `osd` — `e19f2ae860792fdf372cf48d8ce70ae5da3c4052962fe22e9de1f680c374bb0e`
 
 ## Immediate next work
 
-1. Check the newest workflow generated by this handoff-only commit.
-2. On the next user-approved pass, if PR #3 remains green/clean, merge it.
+1. Open/check PR #4 for Stage 4.
+2. Merge PR #4 after its final green check.
 3. Verify post-merge `main`.
-4. Create `stage/04-local-ocr`.
-6. Stage 4:
-   - pin the exact UB-Mannheim Tesseract Windows runtime;
-   - package runtime DLL dependencies into the portable artifact;
-   - pin `ukr`, `eng`, `rus`, `pol`, `deu` and `osd` traineddata with hashes;
-   - add UI language selector driven by installed models;
-   - execute real OCR through the existing `TesseractOcrEngine`;
-   - verify text/confidence/word-coordinate output;
-   - keep all OCR local/offline.
+4. Create `stage/05-layout-tables`.
+5. Stage 5:
+   - normalize OCR words into line objects;
+   - group words into likely rows;
+   - infer column boundaries from X geometry;
+   - reconstruct cells;
+   - preserve confidence/provenance from source words;
+   - add raw-text / structured-table preview;
+   - add deterministic synthetic regression tests.
 
 ## Technical notes
 
 - App target: `net10.0-windows10.0.19041.0`.
-- `DocumentPage.ImagePath` is the original image or local rendered PDF PNG.
+- Runtime lock: `build/ocr-runtime.lock.json`.
+- Runtime packager: `build/Prepare-OcrRuntime.ps1`.
+- OCR executable path: `Engine/OCR/tesseract.exe`.
+- OCR data path: `Engine/OCR/tessdata`.
 - PDF pages remain under `Workspace/Temp/PdfPages/<hash>/`.
-- Current Auto profile: deskew → illumination normalization → contrast stretch → sharpen.
-- Detected crop is never silently applied; the user explicitly chooses crop preview and can restore the full processed frame.
-- Perspective correction accepts an explicit four-corner `ImageQuad`; it never mutates the source.
-- Deskew keeps the same canvas size with a white background.
-- Adaptive/shadow algorithms use bounded block statistics.
-- Page rotation from Stage 2 remains metadata only.
+- OCR temporary PNGs remain under `Workspace/Temp/OcrInput`.
+- Stage 3 Auto preprocessing remains deskew → illumination normalization → contrast stretch → sharpen.
+- OCR of the processed preview uses exactly the preview chosen by the user.
 
 ## GitHub workflow rule
 
-Use stage branches and PRs; keep `main` releasable. Every meaningful pass ends with CI check, this file updated, then a pause.
+Use stage branches and PRs; keep `main` releasable. Update this file after every meaningful development block.
 
 ## Data safety
 

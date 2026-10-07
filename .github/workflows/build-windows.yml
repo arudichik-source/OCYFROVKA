@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
@@ -67,6 +67,9 @@ jobs:
             -p:PublishTrimmed=false `
             -o publish/OCYFROVKA
           if ($LASTEXITCODE -ne 0) { throw "Publish failed with exit code $LASTEXITCODE" }
+
+          & ./build/Prepare-OcrRuntime.ps1 -Destination publish/OCYFROVKA/Engine/OCR
+          if ($LASTEXITCODE -ne 0) { throw "OCR runtime preparation failed with exit code $LASTEXITCODE" }
 
           @'
           ОЦИФРОВКА Portable x64

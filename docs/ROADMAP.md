@@ -28,15 +28,30 @@
 - [x] Stage 3 portable build verification.
 
 ## Stage 4 — Local OCR
-- [ ] Pin Tesseract Windows build.
-- [ ] Pin and package base multilingual traineddata: Ukrainian/English/Russian/Polish/German + OSD.
+- [x] Pin Tesseract Windows x64 runtime to 5.5.3.20260724.
+- [x] Verify runtime installer SHA256 during every portable build.
+- [x] Pin and package Ukrainian / English / Russian / Polish / German + OSD traineddata.
+- [x] Verify every traineddata SHA256 during every portable build.
 - [x] Dynamic installed-language catalog and multi-language expressions.
-- [ ] Language selector in UI driven by installed models.
-- [ ] `TesseractOcrEngine : IOcrEngine`.
-- [ ] OCR confidence and word coordinates.
+- [x] Editable UI language selector driven by installed models.
+- [x] Real `TesseractOcrEngine : IOcrEngine` execution.
+- [x] Materialize original/processed preview to private local PNG for OCR.
+- [x] TSV parser preserves OCR lines, confidence and word coordinates.
+- [x] OCR result panel in WPF.
+- [x] Runtime `--version` and `--list-langs` smoke checks in CI.
+- [x] Portable artifact contains runtime, DLL dependencies, models and licenses.
+- [x] Stage 4 portable build verification.
 
-## Stage 5+
-- [ ] Layout/table reconstruction.
+## Stage 5 — Layout and table reconstruction
+- [ ] Convert OCR words + coordinates into normalized text lines.
+- [ ] Detect table-like row/column structure.
+- [ ] Reconstruct cells from word geometry and spacing.
+- [ ] Preserve source word confidence for every reconstructed cell.
+- [ ] Detect likely headers and data rows.
+- [ ] Show structured table preview beside raw OCR text.
+- [ ] Regression tests for line/row/column reconstruction.
+
+## Stage 6+
 - [ ] Review workflow.
 - [ ] Dictionaries and SmartCorrector.
 - [ ] SQLite persistence and correction memory.

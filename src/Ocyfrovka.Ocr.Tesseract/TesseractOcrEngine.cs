@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using Ocyfrovka.Core.Ocr;
 
 namespace Ocyfrovka.Ocr.Tesseract;
@@ -19,6 +20,8 @@ public sealed class TesseractOcrEngine : IOcrEngine
         OcrRequest request,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var executable = TesseractRuntimeLocator.GetExecutablePath(_applicationBaseDirectory);
         var tessdata = TesseractRuntimeLocator.GetTessdataPath(_applicationBaseDirectory);
 
@@ -41,20 +44,9 @@ public sealed class TesseractOcrEngine : IOcrEngine
                 $"Додайте відповідні *.traineddata у {tessdata}");
         }
 
-        var arguments = new[]
-        {
-            Quote(request.FilePath),
-            "stdout",
-            "--tessdata-dir", Quote(tessdata),
-            "-l", Quote(request.Language),
-            "--psm", ProfileToPsm(request.Profile),
-            "tsv"
-        };
-
         var startInfo = new ProcessStartInfo
         {
             FileName = executable,
-            Arguments = string.Join(' ', arguments),
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -62,13 +54,46 @@ public sealed class TesseractOcrEngine : IOcrEngine
             WorkingDirectory = Path.GetDirectoryName(executable)!
         };
 
+        startInfo.ArgumentList.Add(request.FilePath);
+        startInfo.ArgumentList.Add("stdout");
+        startInfo.ArgumentList.Add("--tessdata-dir");
+        startInfo.ArgumentList.Add(tessdata);
+        startInfo.ArgumentList.Add("-l");
+        startInfo.ArgumentList.Add(request.Language);
+        startInfo.ArgumentList.Add("--psm");
+        startInfo.ArgumentList.Add(ProfileToPsm(request.Profile));
+        startInfo.ArgumentList.Add("tsv");
+
         using var process = new Process { StartInfo = startInfo };
-        process.Start();
+
+        if (!process.Start())
+        {
+            throw new InvalidOperationException("Не вдалося запустити локальний Tesseract OCR.");
+        }
 
         var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
         var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
 
-        await process.WaitForExitAsync(cancellationToken);
+        try
+        {
+            await process.WaitForExitAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+            }
+            catch
+            {
+                // Cancellation is the primary outcome.
+            }
+
+            throw;
+        }
 
         var stdout = await stdoutTask;
         var stderr = await stderrTask;
@@ -82,27 +107,51 @@ public sealed class TesseractOcrEngine : IOcrEngine
         return ParseTsv(stdout);
     }
 
-    private static OcrResult ParseTsv(string tsv)
+    internal static OcrResult ParseTsv(string tsv)
     {
         var words = new List<OcrWord>();
-        var text = new List<string>();
+        var lines = new List<string>();
+        var currentLine = new StringBuilder();
+        var currentKey = string.Empty;
+
         double confidenceSum = 0;
         var confidenceCount = 0;
 
-        foreach (var line in tsv.Split('\n', StringSplitOptions.RemoveEmptyEntries).Skip(1))
+        foreach (var rawLine in tsv.Split('\n', StringSplitOptions.RemoveEmptyEntries).Skip(1))
         {
-            var parts = line.TrimEnd('\r').Split('\t');
-            if (parts.Length < 12 || string.IsNullOrWhiteSpace(parts[11])) continue;
+            var parts = rawLine.TrimEnd('\r').Split('\t');
+            if (parts.Length < 12 || string.IsNullOrWhiteSpace(parts[11]))
+            {
+                continue;
+            }
 
-            _ = int.TryParse(parts[6], out var x);
-            _ = int.TryParse(parts[7], out var y);
-            _ = int.TryParse(parts[8], out var width);
-            _ = int.TryParse(parts[9], out var height);
+            _ = int.TryParse(parts[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out var lineNumber);
+            _ = int.TryParse(parts[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out var paragraphNumber);
+            _ = int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out var blockNumber);
+            _ = int.TryParse(parts[6], NumberStyles.Integer, CultureInfo.InvariantCulture, out var x);
+            _ = int.TryParse(parts[7], NumberStyles.Integer, CultureInfo.InvariantCulture, out var y);
+            _ = int.TryParse(parts[8], NumberStyles.Integer, CultureInfo.InvariantCulture, out var width);
+            _ = int.TryParse(parts[9], NumberStyles.Integer, CultureInfo.InvariantCulture, out var height);
             _ = double.TryParse(parts[10], NumberStyles.Float, CultureInfo.InvariantCulture, out var confidence);
 
             var value = parts[11].Trim();
+            var key = $"{blockNumber}:{paragraphNumber}:{lineNumber}";
+
+            if (currentLine.Length > 0 && !string.Equals(currentKey, key, StringComparison.Ordinal))
+            {
+                lines.Add(currentLine.ToString());
+                currentLine.Clear();
+            }
+
+            if (currentLine.Length > 0)
+            {
+                currentLine.Append(' ');
+            }
+
+            currentLine.Append(value);
+            currentKey = key;
+
             words.Add(new OcrWord(value, confidence, x, y, width, height));
-            text.Add(value);
 
             if (confidence >= 0)
             {
@@ -111,8 +160,13 @@ public sealed class TesseractOcrEngine : IOcrEngine
             }
         }
 
+        if (currentLine.Length > 0)
+        {
+            lines.Add(currentLine.ToString());
+        }
+
         return new OcrResult(
-            string.Join(' ', text),
+            string.Join(Environment.NewLine, lines),
             confidenceCount == 0 ? 0 : confidenceSum / confidenceCount,
             words);
     }
@@ -125,6 +179,4 @@ public sealed class TesseractOcrEngine : IOcrEngine
         "numbers" => "6",
         _ => "3"
     };
-
-    private static string Quote(string value) => $"\"{value.Replace("\"", "\\\"")}\"";
 }
