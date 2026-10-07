@@ -6,5 +6,7 @@ public enum PreprocessingProfile
     Grayscale,
     HighContrast,
     Binary,
+    AdaptiveBinary,
+    ShadowCorrected,
     Sharpened
 }
