@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "runtime": {
+    "name": "Tesseract OCR Windows x64",
+    "version": "5.5.3.20260724",
+    "releaseTag": "5.5.3",
+    "installerUrl": "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.3/tesseract-ocr-w64-setup-5.5.3.20260724.exe",
+    "installerSha256": "bee9e3434bd94fd65387d9be28cd467a41f61b1275383b55b0f59a1331270ae4"
+  },
+  "modelSources": {
+    "tessdataBestCommit": "e12c65a915945e4c28e237a9b52bc4a8f39a0cec",
+    "tessdataCommit": "ced78752cc61322fb554c280d13360b35b8684e4"
+  },
+  "models": [
+    {"code":"ukr","url":"https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/ukr.traineddata","sha256":""},
+    {"code":"eng","url":"https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/eng.traineddata","sha256":""},
+    {"code":"rus","url":"https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/rus.traineddata","sha256":""},
+    {"code":"pol","url":"https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/pol.traineddata","sha256":""},
+    {"code":"deu","url":"https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/deu.traineddata","sha256":""},
+    {"code":"osd","url":"https://raw.githubusercontent.com/tesseract-ocr/tessdata/ced78752cc61322fb554c280d13360b35b8684e4/osd.traineddata","sha256":""}
+  ]
+}
