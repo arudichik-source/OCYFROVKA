@@ -2,14 +2,13 @@
 
 **Updated:** 2026-10-07  
 **Repository:** `arudichik-source/OCYFROVKA`  
-**Active branch:** `stage/02-input`  
-**Open pull request:** #2 — Stage 2: document input, image preview and local PDF import  
-**Stage 1 main commit:** `23a8224ae1950d1394822b22ae6d4afda9e53da5`  
-**Latest verified Stage 2 code commit:** `23cd48dccfbb12ff00e1d8ab2790f903a5a919f2`
+**Active branch:** `stage/03-preprocessing`  
+**Latest merged PR:** #2 — Stage 2: document input, image preview and local PDF import  
+**Green main commit after Stage 2:** `254128a668ac8821e13cc1720fe28f732fbf297f`
 
 ## Purpose
 
-This file is the restart point for the next ChatGPT branch/conversation. Read it first, then inspect the active branch, PR #2 and the newest GitHub Actions run before changing code.
+This file is the restart point for the next ChatGPT branch/conversation. Read it first, then inspect `stage/03-preprocessing` and the newest GitHub Actions run before changing code.
 
 ## Fixed project decisions
 
@@ -28,89 +27,86 @@ This file is the restart point for the next ChatGPT branch/conversation. Read it
 
 ## Completed — Stage 1
 
-Stage 1 is merged into `main` and verified green.
+Stage 1 is merged and green.
 
 Implemented:
 
-- WPF application skeleton and dark initial UI.
-- Portable workspace creation.
-- Core OCR contracts and first models.
-- `Ocyfrovka.Ocr.Tesseract` adapter.
-- Local Tesseract process wrapper producing TSV/word coordinates.
-- Dynamic multilingual `TesseractLanguageCatalog`.
-- First text normalizer and tests.
-- GitHub Actions Windows x64 self-contained publish.
-- Technical specification v0.2, roadmap, third-party notices and fail-fast build scripts.
+- WPF application skeleton and portable workspace.
+- Core OCR contracts/models.
+- Tesseract adapter foundation.
+- Multilingual model discovery.
+- Initial text normalization/tests.
+- Windows x64 portable CI publish.
+- Project documentation and fail-fast build scripts.
 
-## Stage 2 — implemented
+## Completed — Stage 2
 
-Stage 2 input/document layer is complete in `stage/02-input` and PR #2 is open.
+Stage 2 is merged into `main` through PR #2 and verified green.
 
 Implemented:
 
-- `InputFileKind` and `InputFileClassifier`.
-- `DocumentPage` and `DigitizationDocument`.
-- JPG/JPEG/PNG/BMP/TIF/TIFF import.
-- Multi-frame TIFF expansion into separate pages.
+- JPG/JPEG/PNG/BMP/TIF/TIFF input.
+- Multi-frame TIFF expansion.
+- `DocumentPage` / `DigitizationDocument` model.
 - Duplicate prevention.
-- Page add/remove/clear.
-- Page ordering with move up/down.
-- Non-destructive 90° left/right rotation.
-- Selected-page image preview.
-- PDF classification and real local PDF page import.
-- PDF rasterization through Windows `Windows.Data.Pdf`.
-- Application target updated to `net10.0-windows10.0.19041.0` so the built-in Windows PDF API is available.
-- Each PDF page is rendered locally to PNG under `Workspace/Temp/PdfPages/<hash>/`.
-- Original PDF files are never modified.
-- PDF-backed `DocumentPage` keeps the original PDF path/page index plus a private rendered working image path.
-- Clear local errors for invalid/unreadable/password-protected or unsupported PDF input.
-- PDF import is asynchronous in the WPF UI.
-- Synthetic PDF integration test verifies actual Windows PDF rasterization and PNG output.
-- Invalid-PDF integration test verifies the user-facing failure path.
-- CI/local build runs both core tests and Windows integration tests.
+- Page add/remove/clear and ordering.
+- Non-destructive 90° rotation.
+- Selected-page preview.
+- Real local PDF import with Windows `Windows.Data.Pdf`.
+- PDF pages rendered to local PNG under `Workspace/Temp/PdfPages/<hash>/`.
+- Original PDFs/images are never rewritten.
+- PDF-backed pages preserve original PDF path/page index plus private rendered working image.
+- Async PDF import in WPF.
+- Clear invalid/unreadable/password-protected PDF error path.
+- Windows PDF integration tests with generated synthetic PDF.
+- Core + Windows integration tests in CI/local build.
 
 ## Latest verified CI
 
-Workflow run:
+Post-merge `main` workflow:
 
-- Run: `37609784340`
-- Commit: `23cd48dccfbb12ff00e1d8ab2790f903a5a919f2`
+- Run: `37610356560`
+- Commit: `254128a668ac8821e13cc1720fe28f732fbf297f`
 - Result: **SUCCESS**
 - Core tests: **26/26 PASS**
 - Windows PDF integration tests: **2/2 PASS**
-- Total tests: **28/28 PASS**
+- Total: **28/28 PASS**
 - Portable Windows x64 publish: **SUCCESS**
 - Artifact upload: **SUCCESS**
 
-A later documentation-only commit marks PDF input complete in `docs/ROADMAP.md`. PR #2 must be checked again at its final head before merge.
+Final PR #2 head checks were also green before merge.
 
-## Immediate next work
+## Current branch / Stage 3 goal
 
-1. Check the final PR #2 GitHub Actions run.
-2. If PR #2 is green, merge it into `main`.
-3. Verify the post-merge `main` workflow.
-4. Create `stage/03-preprocessing` from the verified green `main`.
-5. Start Stage 3 only on that new branch:
-   - page-boundary/crop foundation;
-   - deskew;
-   - grayscale;
-   - threshold/high-contrast variants;
-   - sharpen/noise/shadow handling;
-   - image-quality score;
-   - preserve original vs processed preview.
+Branch `stage/03-preprocessing` was created from the verified green Stage 2 `main`.
 
-Do not package the real Tesseract Windows runtime or move into OCR execution until Stage 3 preprocessing is stable.
+Stage 3 scope:
+
+1. Introduce a dedicated image preprocessing abstraction/project instead of placing processing logic in the WPF window.
+2. Preserve original and processed versions separately.
+3. Implement grayscale.
+4. Implement high-contrast / threshold variants.
+5. Implement sharpen.
+6. Add basic noise/shadow handling where reliable.
+7. Add deskew foundation and automatic skew-angle estimation.
+8. Add page-boundary/crop foundation without destructive edits.
+9. Add image-quality scoring/warnings.
+10. Add UI switch/preview for Original vs Processed.
+11. Add unit/integration tests for deterministic transforms.
+12. Keep long operations off the UI thread.
+13. When Stage 3 is fully green, open PR #3 to `main`.
+
+Do not package the real Tesseract Windows runtime or begin production OCR execution until preprocessing is stable.
 
 ## Known technical notes
 
-- xUnit global usings are present in both test projects.
-- `WorkspaceInitializer.cs` has explicit `System.IO` imports.
-- CI/local PowerShell scripts explicitly fail on non-zero `dotnet` exit codes.
+- Application target: `net10.0-windows10.0.19041.0`.
 - Current image preview uses WPF `BitmapDecoder`.
-- PDF rendering uses Windows' built-in PDF API, not a cloud service.
-- PDF rasterization is currently capped at 6000 px on the longest side and uses a 2× render scale.
-- Page rotation is metadata only. Original input files are never rewritten.
-- Multi-frame TIFF pages use `SourceFrameIndex`; PDF pages use the same index plus `RenderedImagePath`.
+- PDF rasterization is capped at 6000 px on the longest side and uses a 2× render scale.
+- Page rotation remains metadata only.
+- `DocumentPage.ImagePath` points to the original image or the rendered PDF working PNG.
+- Multi-frame TIFF pages use `SourceFrameIndex`.
+- Runtime folders and user data remain outside Git.
 
 ## GitHub workflow rule
 
@@ -118,7 +114,7 @@ Use stage branches and PRs. Keep `main` releasable. Every meaningful pass must e
 
 1. running/checking GitHub Actions;
 2. fixing failures found in that pass where practical;
-3. updating this file with exact branch, PR, current state, latest failure/success and next task;
+3. updating this file with exact branch, PR/current state, latest success/failure and next task;
 4. stopping so the user can explicitly request the next pass.
 
 ## Data safety
@@ -131,7 +127,7 @@ Never commit:
 - Workspace / Export / Logs;
 - credentials, tokens or certificates.
 
-Synthetic non-sensitive test fixtures may be generated by tests in temporary directories but should not contain user data.
+Synthetic non-sensitive fixtures generated during tests are allowed.
 
 See `.gitignore`.
 
