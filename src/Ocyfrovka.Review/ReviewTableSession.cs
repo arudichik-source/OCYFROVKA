@@ -27,6 +27,58 @@ public sealed class ReviewTableSession
     public ReviewCell? Find(ReviewCellKey key)
         => _cells.GetValueOrDefault(key);
 
+    public ReviewSummary GetSummary(double lowConfidenceThreshold = 70)
+    {
+        var reviewable = _cells.Values
+            .Where(cell => cell.Key.RowIndex != HeaderRowIndex)
+            .ToArray();
+
+        if (reviewable.Length == 0)
+        {
+            return new ReviewSummary(
+                ReviewSessionState.New,
+                0,
+                0,
+                0,
+                0,
+                0);
+        }
+
+        var reviewed = reviewable.Count(cell =>
+            cell.State != ReviewCellState.Recognized);
+        var confirmed = reviewable.Count(cell =>
+            cell.State == ReviewCellState.ConfirmedByUser);
+        var errors = reviewable.Count(cell =>
+            cell.State == ReviewCellState.Error);
+        var lowConfidence = reviewable.Count(cell =>
+            cell.State != ReviewCellState.ConfirmedByUser &&
+            cell.Confidence >= 0 &&
+            cell.Confidence < lowConfidenceThreshold);
+
+        var state = errors > 0
+            ? ReviewSessionState.Error
+            : confirmed == reviewable.Length
+                ? ReviewSessionState.Reviewed
+                : ReviewSessionState.NeedsReview;
+
+        return new ReviewSummary(
+            state,
+            reviewable.Length,
+            reviewed,
+            confirmed,
+            errors,
+            lowConfidence);
+    }
+
+    public void ConfirmAll()
+    {
+        foreach (var cell in _cells.Values
+                     .Where(cell => cell.Key.RowIndex != HeaderRowIndex))
+        {
+            cell.Confirm();
+        }
+    }
+
     public void Merge(TableLayout layout)
     {
         ArgumentNullException.ThrowIfNull(layout);
