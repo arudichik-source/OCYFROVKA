@@ -67,11 +67,17 @@ try {
     $resolvedModels = @()
 
     foreach ($model in $lock.models) {
+        $expectedHash = ([string]$model.sha256).Trim()
+
+        if (-not $lock.allowBootstrapModelHashes -and -not $expectedHash) {
+            throw "OCR model $($model.code) is not SHA256-locked."
+        }
+
         $target = Join-Path $tessdata ($model.code + '.traineddata')
         Write-Host "Downloading OCR model $($model.code)..."
         Invoke-WebRequest -Uri $model.url -OutFile $target
 
-        $hash = Assert-Sha256 -Path $target -Expected ([string]$model.sha256) -Label ("OCR model " + $model.code)
+        $hash = Assert-Sha256 -Path $target -Expected $expectedHash -Label ("OCR model " + $model.code)
         $size = (Get-Item -LiteralPath $target).Length
         Write-Host "MODEL_SHA256 $($model.code) $hash $size"
 
