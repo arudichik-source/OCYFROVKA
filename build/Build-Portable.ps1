@@ -1,5 +1,13 @@
 $ErrorActionPreference = 'Stop'
 
+function Assert-LastExitCode {
+    param([string]$Step)
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Step failed with exit code $LASTEXITCODE"
+    }
+}
+
 $root = Split-Path -Parent $PSScriptRoot
 $publishDir = Join-Path $root 'publish/OCYFROVKA'
 $zipPath = Join-Path $root 'OCYFROVKA_Portable_x64.zip'
@@ -8,8 +16,13 @@ if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 
 dotnet restore (Join-Path $root 'src/Ocyfrovka.App/Ocyfrovka.App.csproj')
+Assert-LastExitCode 'App restore'
+
 dotnet restore (Join-Path $root 'tests/Ocyfrovka.Core.Tests/Ocyfrovka.Core.Tests.csproj')
+Assert-LastExitCode 'Tests restore'
+
 dotnet test (Join-Path $root 'tests/Ocyfrovka.Core.Tests/Ocyfrovka.Core.Tests.csproj') -c Release --no-restore
+Assert-LastExitCode 'Unit tests'
 
 dotnet publish (Join-Path $root 'src/Ocyfrovka.App/Ocyfrovka.App.csproj') `
   -c Release `
@@ -18,6 +31,7 @@ dotnet publish (Join-Path $root 'src/Ocyfrovka.App/Ocyfrovka.App.csproj') `
   -p:PublishSingleFile=false `
   -p:PublishTrimmed=false `
   -o $publishDir
+Assert-LastExitCode 'Publish'
 
 @'
 ОЦИФРОВКА Portable x64
