@@ -146,6 +146,8 @@
                             <ComboBoxItem Content="Відтінки сірого"/>
                             <ComboBoxItem Content="Високий контраст"/>
                             <ComboBoxItem Content="Ч/Б (Otsu)"/>
+                            <ComboBoxItem Content="Адаптивний Ч/Б"/>
+                            <ComboBoxItem Content="Корекція освітлення"/>
                             <ComboBoxItem Content="Різкість"/>
                         </ComboBox>
                         <Button Content="Обробити" Click="ProcessSelected_Click" Padding="13,7" Margin="3"/>
