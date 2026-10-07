@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using Ocyfrovka.App.Services;
 using Ocyfrovka.Core.Documents;
 using Ocyfrovka.Core.Input;
+using Ocyfrovka.Imaging;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,7 +12,11 @@ namespace Ocyfrovka.App;
 public partial class MainWindow : Window
 {
     private readonly DigitizationDocument _document = new();
+    private readonly Dictionary<Guid, ProcessedPreview> _processedPreviews = [];
+
     private bool _isImporting;
+    private bool _isProcessing;
+    private bool _showProcessed;
 
     public MainWindow()
     {
@@ -54,7 +59,7 @@ public partial class MainWindow : Window
     private async Task AddFilesAsync(IEnumerable<string> paths)
     {
         _isImporting = true;
-        StatusText.Text = "Stage 2: імпорт файлів…";
+        StatusText.Text = "Stage 3: імпорт файлів…";
 
         try
         {
@@ -100,6 +105,7 @@ public partial class MainWindow : Window
                 }
             }
 
+            _showProcessed = false;
             RefreshPages(lastAdded);
 
             var notes = new List<string>();
@@ -124,8 +130,8 @@ public partial class MainWindow : Window
             }
 
             StatusText.Text = added > 0
-                ? $"Stage 2: у документі {_document.Count} стор."
-                : "Stage 2: нових сторінок не додано.";
+                ? $"Stage 3: у документі {_document.Count} стор."
+                : "Stage 3: нових сторінок не додано.";
 
             if (unsupported > 0 || errors.Count > 0)
             {
@@ -180,6 +186,7 @@ public partial class MainWindow : Window
         }
 
         page.RotateCounterClockwise();
+        InvalidateProcessed(page);
         RefreshPages(page);
     }
 
@@ -191,6 +198,7 @@ public partial class MainWindow : Window
         }
 
         page.RotateClockwise();
+        InvalidateProcessed(page);
         RefreshPages(page);
     }
 
@@ -207,6 +215,7 @@ public partial class MainWindow : Window
             .index;
 
         _document.Remove(page.Id);
+        _processedPreviews.Remove(page.Id);
 
         DocumentPage? next = null;
         if (_document.Count > 0)
@@ -214,15 +223,123 @@ public partial class MainWindow : Window
             next = _document.Pages[Math.Min(oldIndex, _document.Count - 1)];
         }
 
+        _showProcessed = false;
         RefreshPages(next);
-        StatusText.Text = $"Stage 2: у документі {_document.Count} стор.";
+        StatusText.Text = $"Stage 3: у документі {_document.Count} стор.";
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
     {
         _document.Clear();
+        _processedPreviews.Clear();
+        _showProcessed = false;
         RefreshPages();
-        StatusText.Text = "Stage 2: документ очищено.";
+        StatusText.Text = "Stage 3: документ очищено.";
+    }
+
+    private void ShowOriginal_Click(object sender, RoutedEventArgs e)
+    {
+        _showProcessed = false;
+        ShowSelectedPreview();
+    }
+
+    private void ShowProcessed_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedPage() is not { } page)
+        {
+            return;
+        }
+
+        if (!_processedPreviews.ContainsKey(page.Id))
+        {
+            _showProcessed = false;
+            StatusText.Text = "Stage 3: спочатку натисніть «Обробити» для цієї сторінки.";
+            ShowSelectedPreview();
+            return;
+        }
+
+        _showProcessed = true;
+        ShowSelectedPreview();
+    }
+
+    private void ApplyCrop_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedPage() is not { } page ||
+            !_processedPreviews.TryGetValue(page.Id, out var processed))
+        {
+            StatusText.Text = "Stage 3: спочатку обробіть сторінку.";
+            return;
+        }
+
+        var cropped = ImageProcessingService.ApplyDetectedCrop(processed);
+        _processedPreviews[page.Id] = cropped;
+        _showProcessed = true;
+        ShowSelectedPreview();
+
+        StatusText.Text = cropped.CropApplied
+            ? $"Stage 3: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
+            : "Stage 3: межі збігаються з повним кадром.";
+    }
+
+    private void ResetCrop_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedPage() is not { } page ||
+            !_processedPreviews.TryGetValue(page.Id, out var processed))
+        {
+            return;
+        }
+
+        _processedPreviews[page.Id] =
+            ImageProcessingService.ResetDetectedCrop(processed);
+
+        _showProcessed = true;
+        ShowSelectedPreview();
+        StatusText.Text = "Stage 3: показано повний оброблений кадр.";
+    }
+
+    private async void ProcessSelected_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isProcessing || GetSelectedPage() is not { } page)
+        {
+            return;
+        }
+
+        _isProcessing = true;
+        StatusText.Text = "Stage 3: обробка сторінки…";
+
+        try
+        {
+            var original = ImagePreviewLoader.Load(page);
+            var profile = GetSelectedProfile();
+
+            var processed = await Task.Run(
+                () => ImageProcessingService.Process(original, profile));
+
+            _processedPreviews[page.Id] = processed;
+            _showProcessed = true;
+            ShowSelectedPreview();
+
+            StatusText.Text =
+                $"Stage 3: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
+        }
+        catch (Exception ex)
+        {
+            _showProcessed = false;
+            ShowSelectedPreview();
+
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "ОЦИФРОВКА — preprocessing",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            StatusText.Text = "Stage 3: помилка обробки сторінки.";
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
     }
 
     private void Digitize_Click(object sender, RoutedEventArgs e)
@@ -240,13 +357,30 @@ public partial class MainWindow : Window
 
         MessageBox.Show(
             this,
-            $"Документ підготовлено: {_document.Count} стор. Порядок і повороти збережені в моделі без зміни оригіналів. OCR буде підключено після завершення Stage 2/3.",
-            "ОЦИФРОВКА — Stage 2",
+            $"Документ підготовлено: {_document.Count} стор. Preprocessing уже можна перевіряти для кожної сторінки. OCR буде підключено після завершення Stage 3.",
+            "ОЦИФРОВКА — Stage 3",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }
 
     private DocumentPage? GetSelectedPage() => InputFilesList.SelectedItem as DocumentPage;
+
+    private PreprocessingProfile GetSelectedProfile() => ProfileComboBox.SelectedIndex switch
+    {
+        1 => PreprocessingProfile.Grayscale,
+        2 => PreprocessingProfile.HighContrast,
+        3 => PreprocessingProfile.Binary,
+        4 => PreprocessingProfile.AdaptiveBinary,
+        5 => PreprocessingProfile.ShadowCorrected,
+        6 => PreprocessingProfile.Sharpened,
+        _ => PreprocessingProfile.Auto
+    };
+
+    private void InvalidateProcessed(DocumentPage page)
+    {
+        _processedPreviews.Remove(page.Id);
+        _showProcessed = false;
+    }
 
     private void RefreshPages(DocumentPage? preferredSelection = null)
     {
@@ -268,6 +402,7 @@ public partial class MainWindow : Window
         {
             PreviewImage.Source = null;
             PreviewHintText.Visibility = Visibility.Visible;
+            PreviewModeText.Text = "Оригінал";
             PreviewInfoText.Text = "Оригінал не змінюється.";
         }
 
@@ -281,14 +416,39 @@ public partial class MainWindow : Window
         {
             PreviewImage.Source = null;
             PreviewHintText.Visibility = Visibility.Visible;
+            PreviewModeText.Text = "Оригінал";
             PreviewInfoText.Text = "Оригінал не змінюється.";
             return;
         }
 
         try
         {
+            if (_showProcessed && _processedPreviews.TryGetValue(page.Id, out var processed))
+            {
+                PreviewImage.Source = processed.Image;
+                PreviewHintText.Visibility = Visibility.Collapsed;
+                PreviewModeText.Text = "Оброблено";
+
+                var warnings = processed.Quality.Warnings.Count == 0
+                    ? "попереджень немає"
+                    : string.Join(" ", processed.Quality.Warnings);
+
+                PreviewInfoText.Text =
+                    $"Профіль: {GetProfileName(processed.Profile)} · " +
+                    $"якість {processed.Quality.OverallScore:0.#}/100 · " +
+                    $"яскравість {processed.Quality.Brightness:0.#} · " +
+                    $"контраст {processed.Quality.Contrast:0.#} · " +
+                    $"деталі {processed.Quality.EdgeScore:0.#} · " +
+                    $"deskew {processed.DeskewAngle:+0.##;-0.##;0}° · " +
+                    $"межі {processed.ContentBounds.Width}×{processed.ContentBounds.Height} · " +
+                    $"crop {(processed.CropApplied ? "увімкнено" : "вимкнено")} · " +
+                    $"Otsu {processed.OtsuThreshold}. {warnings}";
+                return;
+            }
+
             PreviewImage.Source = ImagePreviewLoader.Load(page);
             PreviewHintText.Visibility = Visibility.Collapsed;
+            PreviewModeText.Text = "Оригінал";
             PreviewInfoText.Text =
                 $"{page.PixelWidth} × {page.PixelHeight} px · поворот {page.RotationDegrees}° · оригінал не змінено";
         }
@@ -300,4 +460,15 @@ public partial class MainWindow : Window
             PreviewInfoText.Text = ex.Message;
         }
     }
+
+    private static string GetProfileName(PreprocessingProfile profile) => profile switch
+    {
+        PreprocessingProfile.Grayscale => "Відтінки сірого",
+        PreprocessingProfile.HighContrast => "Високий контраст",
+        PreprocessingProfile.Binary => "Ч/Б (Otsu)",
+        PreprocessingProfile.AdaptiveBinary => "Адаптивний Ч/Б",
+        PreprocessingProfile.ShadowCorrected => "Корекція освітлення",
+        PreprocessingProfile.Sharpened => "Різкість",
+        _ => "Авто"
+    };
 }
