@@ -9,7 +9,7 @@
 
 ## Stage 2 — Input
 - [x] Import JPG/JPEG/PNG/BMP/TIF/TIFF.
-- [ ] PDF page extraction (next Stage 2 pass).
+- [x] Local PDF page extraction and preview rendering.
 - [x] Multi-page document model.
 - [x] Page ordering and non-destructive 90° rotation.
 
