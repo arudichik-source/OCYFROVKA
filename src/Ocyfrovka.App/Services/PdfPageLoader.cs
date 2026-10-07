@@ -8,7 +8,7 @@ using Windows.Storage.Streams;
 
 namespace Ocyfrovka.App.Services;
 
-internal static class PdfPageLoader
+public static class PdfPageLoader
 {
     private const double RenderScale = 2.0;
     private const uint MaxRenderDimension = 6000;
