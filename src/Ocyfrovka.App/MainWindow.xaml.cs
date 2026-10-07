@@ -694,6 +694,62 @@ public partial class MainWindow : Window
         StatusText.Text = "Stage 7: усі клітинки поточної таблиці підтверджено.";
     }
 
+    private void ImportDictionary_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Multiselect = false,
+            Filter = "JSON-довідник|*.json|Усі файли|*.*"
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var catalog = DictionaryLoader.Load(dialog.FileName);
+
+            var targetPath = Path.Combine(
+                AppContext.BaseDirectory,
+                "Data",
+                "Dictionaries",
+                "nomenclature.json");
+
+            var sourceFullPath = Path.GetFullPath(dialog.FileName);
+            var targetFullPath = Path.GetFullPath(targetPath);
+
+            if (!string.Equals(
+                    sourceFullPath,
+                    targetFullPath,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                Directory.CreateDirectory(
+                    Path.GetDirectoryName(targetFullPath)!);
+
+                File.Copy(
+                    sourceFullPath,
+                    targetFullPath,
+                    overwrite: true);
+            }
+
+            StatusText.Text =
+                $"Stage 7: довідник імпортовано · записів {catalog.Entries.Count}.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "ОЦИФРОВКА — імпорт довідника",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            StatusText.Text = "Stage 7: імпорт довідника не виконано.";
+        }
+    }
+
     private void ApplyDictionary_Click(object sender, RoutedEventArgs e)
     {
         if (GetSelectedPage() is not { } page ||
