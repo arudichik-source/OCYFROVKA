@@ -1,4 +1,5 @@
 using System.IO;
+using Ocyfrovka.Dictionary;
 using System.Text.Json;
 
 namespace Ocyfrovka.App.Services;
@@ -26,6 +27,14 @@ internal static class WorkspaceInitializer
         {
             Directory.CreateDirectory(Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar)));
         }
+
+        var dictionaryPath = Path.Combine(
+            root,
+            "Data",
+            "Dictionaries",
+            "nomenclature.json");
+
+        DictionaryLoader.EnsureEmptyDictionary(dictionaryPath);
 
         var settingsPath = Path.Combine(root, "Config", "settings.json");
         if (!File.Exists(settingsPath))
