@@ -113,6 +113,67 @@ public sealed class ReviewTableSessionTests
         Assert.Null(session.Find(new ReviewCellKey(0, 1)));
     }
 
+    [Fact]
+    public void Suggestion_CannotDowngradeManualEditProtection()
+    {
+        var session = new ReviewTableSession(Layout(Cell(0, 0, "ocr", 60)));
+        var cell = session.Find(new ReviewCellKey(0, 0))!;
+
+        cell.ApplyUserEdit("manual");
+        cell.SetSuggestion("automatic proposal");
+        session.Merge(Layout(Cell(0, 0, "new ocr", 95)));
+
+        Assert.Equal("manual", cell.CurrentText);
+        Assert.Null(cell.SuggestedText);
+        Assert.Equal(ReviewCellState.CorrectedByUser, cell.State);
+    }
+
+    [Fact]
+    public void Summary_TracksNeedsReviewReviewedAndError()
+    {
+        var session = new ReviewTableSession(Layout(
+            Cell(0, 0, "A", 95),
+            Cell(0, 1, "B", 50)));
+
+        var first = session.GetSummary();
+        Assert.Equal(ReviewSessionState.NeedsReview, first.State);
+        Assert.Equal(2, first.TotalCells);
+        Assert.Equal(1, first.LowConfidenceCells);
+
+        session.ConfirmAll();
+
+        var reviewed = session.GetSummary();
+        Assert.Equal(ReviewSessionState.Reviewed, reviewed.State);
+        Assert.Equal(2, reviewed.ConfirmedCells);
+        Assert.Equal(0, reviewed.LowConfidenceCells);
+
+        session.Find(new ReviewCellKey(0, 1))!.MarkError();
+
+        var error = session.GetSummary();
+        Assert.Equal(ReviewSessionState.Error, error.State);
+        Assert.Equal(1, error.ErrorCells);
+    }
+
+    [Fact]
+    public void DocumentSummary_AggregatesMultiplePageSessions()
+    {
+        var first = new ReviewTableSession(Layout(Cell(0, 0, "A", 90)));
+        var second = new ReviewTableSession(Layout(Cell(0, 0, "B", 90)));
+
+        first.ConfirmAll();
+
+        var partial = ReviewDocumentSummary.Create([first, second]);
+        Assert.Equal(ReviewSessionState.NeedsReview, partial.State);
+        Assert.Equal(2, partial.SessionCount);
+        Assert.Equal(1, partial.ConfirmedCells);
+
+        second.ConfirmAll();
+
+        var complete = ReviewDocumentSummary.Create([first, second]);
+        Assert.Equal(ReviewSessionState.Reviewed, complete.State);
+        Assert.Equal(2, complete.ConfirmedCells);
+    }
+
     private static TableLayout Layout(params TableCell[] cells)
     {
         var rows = cells
