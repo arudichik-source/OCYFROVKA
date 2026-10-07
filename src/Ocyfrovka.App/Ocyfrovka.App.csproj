@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ocyfrovka.Core\Ocyfrovka.Core.csproj" />
+    <ProjectReference Include="..\Ocyfrovka.Imaging\Ocyfrovka.Imaging.csproj" />
     <ProjectReference Include="..\Ocyfrovka.Ocr.Tesseract\Ocyfrovka.Ocr.Tesseract.csproj" />
   </ItemGroup>
 </Project>
