@@ -16,14 +16,16 @@
 ## Stage 3 — Image preprocessing
 - [x] Page-content boundary detection and crop primitive.
 - [x] Automatic skew-angle estimation and non-destructive deskew.
-- [ ] Perspective correction.
+- [x] Deterministic four-corner perspective correction engine.
 - [x] Grayscale / Otsu threshold / contrast / sharpen.
 - [x] Median 3×3 denoise foundation.
 - [x] Adaptive/local threshold for uneven lighting.
 - [x] Local illumination / shadow normalization.
 - [x] Image quality score and warnings.
 - [x] Original / processed preview switch.
-- [ ] User-controlled crop/perspective preview and final Stage 3 regression pass.
+- [x] User-controlled detected-crop preview with reversible full-frame reset.
+- [x] Synthetic deskew/crop/perspective/adaptive regression coverage.
+- [x] Stage 3 portable build verification.
 
 ## Stage 4 — Local OCR
 - [ ] Pin Tesseract Windows build.
@@ -40,5 +42,6 @@
 - [ ] SQLite persistence and correction memory.
 - [ ] XLSX export.
 - [ ] Queue/background processing.
+- [ ] Optional interactive four-corner editor for manual perspective correction.
 - [ ] Regression dataset and production check.
 - [ ] Portable RC.
