@@ -3,6 +3,7 @@ namespace Ocyfrovka.Dictionary;
 public sealed class DictionaryCatalog
 {
     private readonly IReadOnlyList<DictionaryEntry> _entries;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<DictionaryEntry>> _exactIndex;
 
     public DictionaryCatalog(IEnumerable<DictionaryEntry> entries)
     {
@@ -21,6 +22,35 @@ public sealed class DictionaryCatalog
                     ? null
                     : entry.Category.Trim()))
             .ToArray();
+
+        var index = new Dictionary<string, List<DictionaryEntry>>(
+            StringComparer.Ordinal);
+
+        foreach (var entry in _entries)
+        {
+            foreach (var form in GetNormalizedForms(entry))
+            {
+                if (!index.TryGetValue(form, out var bucket))
+                {
+                    bucket = [];
+                    index[form] = bucket;
+                }
+
+                if (!bucket.Any(existing =>
+                        string.Equals(
+                            existing.Canonical,
+                            entry.Canonical,
+                            StringComparison.OrdinalIgnoreCase)))
+                {
+                    bucket.Add(entry);
+                }
+            }
+        }
+
+        _exactIndex = index.ToDictionary(
+            pair => pair.Key,
+            pair => (IReadOnlyList<DictionaryEntry>)pair.Value.ToArray(),
+            StringComparer.Ordinal);
     }
 
     public static DictionaryCatalog Empty { get; } = new([]);
@@ -35,31 +65,12 @@ public sealed class DictionaryCatalog
             return [];
         }
 
-        return _entries
-            .Where(entry =>
-                AllNormalizedForms(entry)
-                    .Contains(normalizedValue, StringComparer.Ordinal))
-            .GroupBy(
-                entry => CorrectionNormalizer.NormalizeComparable(
-                    entry.Canonical,
-                    CorrectionFieldKind.Nomenclature),
-                StringComparer.Ordinal)
-            .Select(group => group.First())
-            .ToArray();
+        return _exactIndex.TryGetValue(normalizedValue, out var entries)
+            ? entries
+            : [];
     }
 
-    internal IEnumerable<(DictionaryEntry Entry, string Form)> EnumerateForms()
-    {
-        foreach (var entry in _entries)
-        {
-            foreach (var form in AllNormalizedForms(entry))
-            {
-                yield return (entry, form);
-            }
-        }
-    }
-
-    private static IReadOnlyList<string> AllNormalizedForms(
+    internal IReadOnlyList<string> GetNormalizedForms(
         DictionaryEntry entry)
         => new[] { entry.Canonical }
             .Concat(entry.Aliases ?? [])
