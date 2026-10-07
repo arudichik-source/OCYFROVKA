@@ -115,9 +115,18 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="Попередній перегляд" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Попередній перегляд" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="PreviewModeText" Grid.Column="1" Text="Оригінал"
+                               VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}"/>
+                </Grid>
 
                 <Border Grid.Row="1" Background="{StaticResource CardBrush}" BorderBrush="#343A46" BorderThickness="1" CornerRadius="8">
                     <Grid Margin="10">
@@ -128,7 +137,22 @@
                     </Grid>
                 </Border>
 
-                <TextBlock x:Name="PreviewInfoText" Grid.Row="2" Margin="2,10,2,0"
+                <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                    <WrapPanel HorizontalAlignment="Center">
+                        <Button Content="Оригінал" Click="ShowOriginal_Click" Padding="11,7" Margin="3"/>
+                        <Button Content="Оброблено" Click="ShowProcessed_Click" Padding="11,7" Margin="3"/>
+                        <ComboBox x:Name="ProfileComboBox" SelectedIndex="0" Width="145" Margin="8,3,3,3">
+                            <ComboBoxItem Content="Авто"/>
+                            <ComboBoxItem Content="Відтінки сірого"/>
+                            <ComboBoxItem Content="Високий контраст"/>
+                            <ComboBoxItem Content="Ч/Б (Otsu)"/>
+                            <ComboBoxItem Content="Різкість"/>
+                        </ComboBox>
+                        <Button Content="Обробити" Click="ProcessSelected_Click" Padding="13,7" Margin="3"/>
+                    </WrapPanel>
+                </StackPanel>
+
+                <TextBlock x:Name="PreviewInfoText" Grid.Row="3" Margin="2,8,2,0"
                            Text="Оригінал не змінюється."
                            Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap"/>
             </Grid>
@@ -140,7 +164,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="StatusText" Text="Stage 2: імпорт і сторінки" VerticalAlignment="Center"
+                <TextBlock x:Name="StatusText" Text="Stage 3: preprocessing" VerticalAlignment="Center"
                            Foreground="{StaticResource MutedTextBrush}"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="Очистити" Click="Clear_Click" Padding="16,8" Margin="4,0"/>
