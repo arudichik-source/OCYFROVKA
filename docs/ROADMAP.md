@@ -43,16 +43,25 @@
 - [x] Stage 4 portable build verification.
 
 ## Stage 5 — Layout and table reconstruction
-- [ ] Convert OCR words + coordinates into normalized text lines.
-- [ ] Detect table-like row/column structure.
-- [ ] Reconstruct cells from word geometry and spacing.
-- [ ] Preserve source word confidence for every reconstructed cell.
-- [ ] Detect likely headers and data rows.
-- [ ] Show structured table preview beside raw OCR text.
-- [ ] Regression tests for line/row/column reconstruction.
+- [x] Convert OCR words + coordinates into normalized text lines.
+- [x] Detect table-like row/column structure.
+- [x] Reconstruct cells from word geometry and spacing.
+- [x] Preserve source word confidence/provenance for reconstructed cells.
+- [x] Detect likely headers and data rows.
+- [x] Show raw OCR text and structured table preview in separate UI tabs.
+- [x] Regression tests for line/row/column reconstruction.
+- [x] Portable build verification.
 
-## Stage 6+
-- [ ] Review workflow.
+## Stage 6 — Review workflow
+- [ ] Per-document review state.
+- [ ] Per-cell review state.
+- [ ] User edits without silently overwriting OCR source provenance.
+- [ ] Confirm/reject/suggest workflow.
+- [ ] Highlight low-confidence cells.
+- [ ] Preserve user-confirmed values across OCR re-runs.
+- [ ] Regression tests for state transitions and protected confirmed values.
+
+## Stage 7+
 - [ ] Dictionaries and SmartCorrector.
 - [ ] SQLite persistence and correction memory.
 - [ ] XLSX export.
