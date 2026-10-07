@@ -5,7 +5,7 @@
 **Active branch:** `stage/02-input`  
 **Latest merged PR:** #1 — Stage 1: bootstrap portable WPF application  
 **Main commit after merge:** `23a8224ae1950d1394822b22ae6d4afda9e53da5`  
-**Current Stage 2 head:** `36fa127c3adb77b5c63f917738bab3b64bb456bf`
+**Latest functional Stage 2 code commit:** `36fa127c3adb77b5c63f917738bab3b64bb456bf`
 
 ## Purpose
 
