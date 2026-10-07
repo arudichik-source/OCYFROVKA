@@ -4,6 +4,8 @@ using Ocyfrovka.Core.Documents;
 using Ocyfrovka.Core.Input;
 using Ocyfrovka.Core.Ocr;
 using Ocyfrovka.Imaging;
+using Ocyfrovka.Layout;
+using System.Data;
 using Ocyfrovka.Ocr.Tesseract;
 using System.IO;
 using System.Windows;
@@ -68,7 +70,7 @@ public partial class MainWindow : Window
     private async Task AddFilesAsync(IEnumerable<string> paths)
     {
         _isImporting = true;
-        StatusText.Text = "Stage 4: імпорт файлів…";
+        StatusText.Text = "Stage 5: імпорт файлів…";
 
         try
         {
@@ -139,8 +141,8 @@ public partial class MainWindow : Window
             }
 
             StatusText.Text = added > 0
-                ? $"Stage 4: у документі {_document.Count} стор."
-                : "Stage 4: нових сторінок не додано.";
+                ? $"Stage 5: у документі {_document.Count} стор."
+                : "Stage 5: нових сторінок не додано.";
 
             if (unsupported > 0 || errors.Count > 0)
             {
@@ -199,7 +201,7 @@ public partial class MainWindow : Window
 
         page.RotateCounterClockwise();
         InvalidateProcessed(page);
-        OcrTextBox.Clear();
+        ClearOcrOutput();
         RefreshPages(page);
     }
 
@@ -212,7 +214,7 @@ public partial class MainWindow : Window
 
         page.RotateClockwise();
         InvalidateProcessed(page);
-        OcrTextBox.Clear();
+        ClearOcrOutput();
         RefreshPages(page);
     }
 
@@ -238,9 +240,9 @@ public partial class MainWindow : Window
         }
 
         _showProcessed = false;
-        OcrTextBox.Clear();
+        ClearOcrOutput();
         RefreshPages(next);
-        StatusText.Text = $"Stage 4: у документі {_document.Count} стор.";
+        StatusText.Text = $"Stage 5: у документі {_document.Count} стор.";
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
@@ -248,9 +250,9 @@ public partial class MainWindow : Window
         _document.Clear();
         _processedPreviews.Clear();
         _showProcessed = false;
-        OcrTextBox.Clear();
+        ClearOcrOutput();
         RefreshPages();
-        StatusText.Text = "Stage 4: документ очищено.";
+        StatusText.Text = "Stage 5: документ очищено.";
     }
 
     private void ShowOriginal_Click(object sender, RoutedEventArgs e)
@@ -269,7 +271,7 @@ public partial class MainWindow : Window
         if (!_processedPreviews.ContainsKey(page.Id))
         {
             _showProcessed = false;
-            StatusText.Text = "Stage 4: спочатку натисніть «Обробити» для цієї сторінки.";
+            StatusText.Text = "Stage 5: спочатку натисніть «Обробити» для цієї сторінки.";
             ShowSelectedPreview();
             return;
         }
@@ -283,19 +285,19 @@ public partial class MainWindow : Window
         if (GetSelectedPage() is not { } page ||
             !_processedPreviews.TryGetValue(page.Id, out var processed))
         {
-            StatusText.Text = "Stage 4: спочатку обробіть сторінку.";
+            StatusText.Text = "Stage 5: спочатку обробіть сторінку.";
             return;
         }
 
         var cropped = ImageProcessingService.ApplyDetectedCrop(processed);
         _processedPreviews[page.Id] = cropped;
         _showProcessed = true;
-        OcrTextBox.Clear();
+        ClearOcrOutput();
         ShowSelectedPreview();
 
         StatusText.Text = cropped.CropApplied
-            ? $"Stage 4: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
-            : "Stage 4: межі збігаються з повним кадром.";
+            ? $"Stage 5: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
+            : "Stage 5: межі збігаються з повним кадром.";
     }
 
     private void ResetCrop_Click(object sender, RoutedEventArgs e)
@@ -310,9 +312,9 @@ public partial class MainWindow : Window
             ImageProcessingService.ResetDetectedCrop(processed);
 
         _showProcessed = true;
-        OcrTextBox.Clear();
+        ClearOcrOutput();
         ShowSelectedPreview();
-        StatusText.Text = "Stage 4: показано повний оброблений кадр.";
+        StatusText.Text = "Stage 5: показано повний оброблений кадр.";
     }
 
     private async void ProcessSelected_Click(object sender, RoutedEventArgs e)
@@ -323,7 +325,7 @@ public partial class MainWindow : Window
         }
 
         _isProcessing = true;
-        StatusText.Text = "Stage 4: обробка сторінки…";
+        StatusText.Text = "Stage 5: обробка сторінки…";
 
         try
         {
@@ -335,11 +337,11 @@ public partial class MainWindow : Window
 
             _processedPreviews[page.Id] = processed;
             _showProcessed = true;
-            OcrTextBox.Clear();
+            ClearOcrOutput();
             ShowSelectedPreview();
 
             StatusText.Text =
-                $"Stage 4: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
+                $"Stage 5: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
         }
         catch (Exception ex)
         {
@@ -353,7 +355,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 4: помилка обробки сторінки.";
+            StatusText.Text = "Stage 5: помилка обробки сторінки.";
         }
         finally
         {
@@ -397,7 +399,7 @@ public partial class MainWindow : Window
 
         _isOcrRunning = true;
         DigitizeButton.IsEnabled = false;
-        StatusText.Text = $"Stage 4: OCR {language}…";
+        StatusText.Text = $"Stage 5: OCR {language}…";
 
         try
         {
@@ -419,9 +421,10 @@ public partial class MainWindow : Window
                     Profile: "auto"));
 
             OcrTextBox.Text = result.Text;
+            ShowStructuredLayout(result.Words);
 
             StatusText.Text =
-                $"Stage 4: OCR завершено · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
+                $"Stage 5: OCR + структура завершені · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
         }
         catch (Exception ex)
         {
@@ -432,13 +435,115 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 4: OCR завершився помилкою.";
+            StatusText.Text = "Stage 5: OCR завершився помилкою.";
         }
         finally
         {
             _isOcrRunning = false;
             DigitizeButton.IsEnabled = true;
         }
+    }
+
+    private void ClearOcrOutput()
+    {
+        OcrTextBox?.Clear();
+
+        if (StructuredTableGrid is not null)
+        {
+            StructuredTableGrid.ItemsSource = null;
+        }
+
+        if (LayoutStatusText is not null)
+        {
+            LayoutStatusText.Text = "Структура ще не аналізувалась.";
+        }
+    }
+
+    private void ShowStructuredLayout(IReadOnlyList<OcrWord> words)
+    {
+        var layout = TableLayoutAnalyzer.Analyze(words);
+
+        if (!layout.IsLikelyTable || layout.Rows.Count == 0 || layout.ColumnCount < 2)
+        {
+            StructuredTableGrid.ItemsSource = null;
+            LayoutStatusText.Text =
+                $"Таблицю не підтверджено · рядків тексту {layout.Lines.Count} · кандидатних колонок {layout.ColumnCount}.";
+            return;
+        }
+
+        var table = new DataTable();
+        var header = layout.HeaderRowIndex is int headerIndex
+            ? layout.Rows.FirstOrDefault(row => row.Index == headerIndex)
+            : null;
+
+        for (var column = 0; column < layout.ColumnCount; column++)
+        {
+            var proposed = header?.Cells
+                .FirstOrDefault(cell => cell.ColumnIndex == column)?
+                .Text
+                .Trim();
+
+            var name = MakeUniqueColumnName(
+                table,
+                string.IsNullOrWhiteSpace(proposed)
+                    ? $"Колонка {column + 1}"
+                    : proposed);
+
+            table.Columns.Add(name);
+        }
+
+        foreach (var row in layout.Rows)
+        {
+            if (layout.HeaderRowIndex == row.Index)
+            {
+                continue;
+            }
+
+            var values = Enumerable.Repeat(string.Empty, layout.ColumnCount)
+                .Cast<object>()
+                .ToArray();
+
+            foreach (var cell in row.Cells)
+            {
+                if ((uint)cell.ColumnIndex < (uint)values.Length)
+                {
+                    values[cell.ColumnIndex] = cell.Text;
+                }
+            }
+
+            table.Rows.Add(values);
+        }
+
+        StructuredTableGrid.ItemsSource = table.DefaultView;
+
+        var confidences = layout.Rows
+            .SelectMany(row => row.Cells)
+            .Select(cell => cell.Confidence)
+            .Where(value => value >= 0)
+            .ToArray();
+
+        var averageConfidence = confidences.Length == 0
+            ? 0
+            : confidences.Average();
+
+        LayoutStatusText.Text =
+            $"Таблиця: {table.Rows.Count} ряд. × {layout.ColumnCount} кол. · " +
+            $"confidence {averageConfidence:0.#}% · " +
+            $"заголовок {(layout.HeaderRowIndex is null ? "не визначено" : "визначено")}.";
+    }
+
+    private static string MakeUniqueColumnName(DataTable table, string proposed)
+    {
+        var baseName = proposed;
+        var candidate = baseName;
+        var suffix = 2;
+
+        while (table.Columns.Contains(candidate))
+        {
+            candidate = $"{baseName} ({suffix++})";
+        }
+
+        return candidate;
     }
 
     private DocumentPage? GetSelectedPage() => InputFilesList.SelectedItem as DocumentPage;
@@ -509,12 +614,12 @@ public partial class MainWindow : Window
         if (TesseractRuntimeLocator.IsRuntimeAvailable(AppContext.BaseDirectory))
         {
             StatusText.Text =
-                $"Stage 4: OCR runtime готовий · мов {installed.Count}";
+                $"Stage 5: OCR runtime готовий · мов {installed.Count}";
         }
         else
         {
             StatusText.Text =
-                "Stage 4: OCR runtime буде доступний у portable-збірці.";
+                "Stage 5: OCR runtime буде доступний у portable-збірці.";
         }
     }
 
