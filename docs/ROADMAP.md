@@ -14,13 +14,16 @@
 - [x] Page ordering and non-destructive 90° rotation.
 
 ## Stage 3 — Image preprocessing
-- [ ] Crop / page boundary detection.
-- [ ] Deskew and perspective correction.
+- [x] Page-content boundary detection and crop primitive.
+- [x] Automatic skew-angle estimation and non-destructive deskew.
+- [ ] Perspective correction.
 - [x] Grayscale / Otsu threshold / contrast / sharpen.
 - [x] Median 3×3 denoise foundation.
-- [ ] Adaptive threshold / shadow correction refinements.
+- [x] Adaptive/local threshold for uneven lighting.
+- [x] Local illumination / shadow normalization.
 - [x] Image quality score and warnings.
 - [x] Original / processed preview switch.
+- [ ] User-controlled crop/perspective preview and final Stage 3 regression pass.
 
 ## Stage 4 — Local OCR
 - [ ] Pin Tesseract Windows build.
