@@ -10,7 +10,7 @@ $ProgressPreference = 'SilentlyContinue'
 function Assert-Sha256 {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)][string]$Expected,
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Expected,
         [Parameter(Mandatory = $true)][string]$Label
     )
 
