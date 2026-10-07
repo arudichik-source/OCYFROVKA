@@ -6,8 +6,10 @@ internal sealed record ReviewGridProjection(
     IReadOnlyList<string> Headers,
     IReadOnlyList<ReviewGridRowViewModel> Rows,
     int ColumnCount,
+    ReviewSessionState SessionState,
     int ReviewedCount,
     int ConfirmedCount,
+    int ErrorCount,
     int LowConfidenceCount)
 {
     public static ReviewGridProjection Create(ReviewTableSession session)
@@ -25,7 +27,15 @@ internal sealed record ReviewGridProjection(
 
         if (columnCount <= 0)
         {
-            return new ReviewGridProjection([], [], 0, 0, 0, 0);
+            return new ReviewGridProjection(
+                [],
+                [],
+                0,
+                ReviewSessionState.New,
+                0,
+                0,
+                0,
+                0);
         }
 
         var headerRow = session.HeaderRowIndex is int headerIndex
@@ -68,23 +78,17 @@ internal sealed record ReviewGridProjection(
             })
             .ToArray();
 
-        var domainCells = allRows.SelectMany(row => row.Cells).ToArray();
-        var reviewed = domainCells.Count(cell =>
-            cell.State != ReviewCellState.Recognized);
-        var confirmed = domainCells.Count(cell =>
-            cell.State == ReviewCellState.ConfirmedByUser);
-        var lowConfidence = domainCells.Count(cell =>
-            cell.State != ReviewCellState.ConfirmedByUser &&
-            cell.Confidence >= 0 &&
-            cell.Confidence < 70);
+        var summary = session.GetSummary();
 
         return new ReviewGridProjection(
             headers,
             rows,
             columnCount,
-            reviewed,
-            confirmed,
-            lowConfidence);
+            summary.State,
+            summary.ReviewedCells,
+            summary.ConfirmedCells,
+            summary.ErrorCells,
+            summary.LowConfidenceCells);
     }
 
     private static string MakeUnique(
