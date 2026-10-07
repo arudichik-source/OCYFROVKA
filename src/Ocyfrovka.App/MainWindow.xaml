@@ -151,6 +151,8 @@
                             <ComboBoxItem Content="Різкість"/>
                         </ComboBox>
                         <Button Content="Обробити" Click="ProcessSelected_Click" Padding="13,7" Margin="3"/>
+                        <Button Content="Обрізати межі" Click="ApplyCrop_Click" Padding="11,7" Margin="3"/>
+                        <Button Content="Повний кадр" Click="ResetCrop_Click" Padding="11,7" Margin="3"/>
                     </WrapPanel>
                 </StackPanel>
 
