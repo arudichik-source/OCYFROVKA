@@ -21,7 +21,9 @@
 
 ## Stage 4 — Local OCR
 - [ ] Pin Tesseract Windows build.
-- [ ] Pin and package Ukrainian/English/OSD traineddata.
+- [ ] Pin and package base multilingual traineddata: Ukrainian/English/Russian/Polish/German + OSD.
+- [x] Dynamic installed-language catalog and multi-language expressions.
+- [ ] Language selector in UI driven by installed models.
 - [ ] `TesseractOcrEngine : IOcrEngine`.
 - [ ] OCR confidence and word coordinates.
 
