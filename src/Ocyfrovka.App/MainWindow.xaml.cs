@@ -535,10 +535,14 @@ public partial class MainWindow : Window
         StructuredTableGrid.ItemsSource = projection.Rows;
 
         LayoutStatusText.Text =
-            $"Перевірка: {projection.Rows.Count} ряд. × {projection.ColumnCount} кол. · " +
+            $"Стан: {GetReviewStateName(projection.SessionState)} · " +
+            $"{projection.Rows.Count} ряд. × {projection.ColumnCount} кол. · " +
             $"підтверджено {projection.ConfirmedCount} · " +
             $"перевірено {projection.ReviewedCount} · " +
+            $"помилок {projection.ErrorCount} · " +
             $"низька confidence {projection.LowConfidenceCount}.";
+
+        RefreshDocumentReviewStatus();
     }
 
     private static DataGridTextColumn CreateReviewColumn(
@@ -653,6 +657,20 @@ public partial class MainWindow : Window
         RefreshReviewStatus();
     }
 
+    private void ConfirmAllReviewCells_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedPage() is not { } page ||
+            !_reviewSessions.TryGetValue(page.Id, out var session))
+        {
+            StatusText.Text = "Stage 6: немає таблиці для підтвердження.";
+            return;
+        }
+
+        session.ConfirmAll();
+        ShowReviewSession(session);
+        StatusText.Text = "Stage 6: усі клітинки поточної таблиці підтверджено.";
+    }
+
     private void MarkReviewCellError_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedReviewCell is null)
@@ -690,17 +708,43 @@ public partial class MainWindow : Window
         var projection = ReviewGridProjection.Create(session);
 
         LayoutStatusText.Text =
-            $"Перевірка: {projection.Rows.Count} ряд. × {projection.ColumnCount} кол. · " +
+            $"Стан: {GetReviewStateName(projection.SessionState)} · " +
+            $"{projection.Rows.Count} ряд. × {projection.ColumnCount} кол. · " +
             $"підтверджено {projection.ConfirmedCount} · " +
             $"перевірено {projection.ReviewedCount} · " +
+            $"помилок {projection.ErrorCount} · " +
             $"низька confidence {projection.LowConfidenceCount}.";
+
+        RefreshDocumentReviewStatus();
+    }
+
+    private void RefreshDocumentReviewStatus()
+    {
+        var summary = ReviewDocumentSummary.Create(_reviewSessions.Values);
+        var documentState = GetReviewStateName(summary.State);
 
         if (_selectedReviewCell is not null)
         {
             StatusText.Text =
-                $"Stage 6: {_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}%";
+                $"Stage 6: {_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}% · " +
+                $"документ: {documentState}";
+            return;
         }
+
+        StatusText.Text =
+            $"Stage 6: документ {documentState} · " +
+            $"підтверджено {summary.ConfirmedCells}/{summary.TotalCells} · " +
+            $"помилок {summary.ErrorCells}.";
     }
+
+    private static string GetReviewStateName(ReviewSessionState state) => state switch
+    {
+        ReviewSessionState.New => "новий",
+        ReviewSessionState.NeedsReview => "потребує перевірки",
+        ReviewSessionState.Reviewed => "перевірено",
+        ReviewSessionState.Error => "є помилки",
+        _ => state.ToString()
+    };
 
     private DocumentPage? GetSelectedPage() => InputFilesList.SelectedItem as DocumentPage;
 
