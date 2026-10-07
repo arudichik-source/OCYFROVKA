@@ -262,6 +262,41 @@ public partial class MainWindow : Window
         ShowSelectedPreview();
     }
 
+    private void ApplyCrop_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedPage() is not { } page ||
+            !_processedPreviews.TryGetValue(page.Id, out var processed))
+        {
+            StatusText.Text = "Stage 3: спочатку обробіть сторінку.";
+            return;
+        }
+
+        var cropped = ImageProcessingService.ApplyDetectedCrop(processed);
+        _processedPreviews[page.Id] = cropped;
+        _showProcessed = true;
+        ShowSelectedPreview();
+
+        StatusText.Text = cropped.CropApplied
+            ? $"Stage 3: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
+            : "Stage 3: межі збігаються з повним кадром.";
+    }
+
+    private void ResetCrop_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedPage() is not { } page ||
+            !_processedPreviews.TryGetValue(page.Id, out var processed))
+        {
+            return;
+        }
+
+        _processedPreviews[page.Id] =
+            ImageProcessingService.ResetDetectedCrop(processed);
+
+        _showProcessed = true;
+        ShowSelectedPreview();
+        StatusText.Text = "Stage 3: показано повний оброблений кадр.";
+    }
+
     private async void ProcessSelected_Click(object sender, RoutedEventArgs e)
     {
         if (_isProcessing || GetSelectedPage() is not { } page)
@@ -406,6 +441,7 @@ public partial class MainWindow : Window
                     $"деталі {processed.Quality.EdgeScore:0.#} · " +
                     $"deskew {processed.DeskewAngle:+0.##;-0.##;0}° · " +
                     $"межі {processed.ContentBounds.Width}×{processed.ContentBounds.Height} · " +
+                    $"crop {(processed.CropApplied ? "увімкнено" : "вимкнено")} · " +
                     $"Otsu {processed.OtsuThreshold}. {warnings}";
                 return;
             }
