@@ -101,7 +101,11 @@
 - [ ] Optional durable queue job-state recovery across restarts (deferred).
 - [ ] Expanded end-to-end OCR queue tests on non-sensitive fixtures (acceptance hardening).
 
-## Stage 11+
+## Stage 11 — Acceptance and production hardening
+- [x] Add synthetic offline English/Ukrainian image generator for CI.
+- [x] Gate portable publish on actual Tesseract recognition (not just --version).
+- [ ] Verify new acceptance check is green on Windows runner.
+- [ ] Add deterministic non-sensitive regression fixtures for page/table reconstruction.
+- [ ] Add batch OCR end-to-end acceptance and protected review regression.
 - [ ] Optional interactive four-corner editor.
-- [ ] Regression dataset and end-to-end production check.
-- [ ] Portable RC.
+- [ ] Portable production check and release candidate.
