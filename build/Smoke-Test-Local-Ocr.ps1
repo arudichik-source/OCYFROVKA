@@ -64,7 +64,7 @@ function Invoke-SyntheticRecognition {
         [Parameter(Mandatory = $true)][string] $ExpectedDigits
     )
 
-    $output = & $engine $FilePath stdout --tessdata-dir $tessdata -l $Language --psm 6 2>&1
+    $output = & $engine $FilePath stdout --tessdata-dir tessdata -l $Language --psm 6 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "Tesseract synthetic test failed for $Language (exit $LASTEXITCODE): $output"
     }
@@ -78,7 +78,7 @@ function Invoke-SyntheticRecognition {
 
     # Verify the same TSV mode used by TesseractOcrEngine, including
     # word-level geometry and confidence, not just plaintext OCR.
-    $tsvOutput = & $engine $FilePath stdout --tessdata-dir $tessdata -l $Language --psm 6 tsv 2>&1
+    $tsvOutput = & $engine $FilePath stdout --tessdata-dir tessdata -l $Language --psm 6 tsv 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw "Tesseract TSV mode failed for $Language (exit $LASTEXITCODE): $tsvOutput"
     }
@@ -118,8 +118,16 @@ try {
     New-SyntheticTestImage -Text 'INVOICE 12345' -FilePath $english
     New-SyntheticTestImage -Text 'ТЕСТ 67890' -FilePath $ukrainian
 
-    Invoke-SyntheticRecognition -FilePath $english -Language 'eng' -ExpectedDigits '12345'
-    Invoke-SyntheticRecognition -FilePath $ukrainian -Language 'ukr' -ExpectedDigits '67890'
+    # Process current directory is set through Windows wide-char APIs.
+    # Relative ASCII tessdata avoids locale-dependent argv mangling.
+    Push-Location -LiteralPath (Split-Path -Parent $engine)
+    try {
+        Invoke-SyntheticRecognition -FilePath $english -Language 'eng' -ExpectedDigits '12345'
+        Invoke-SyntheticRecognition -FilePath $ukrainian -Language 'ukr' -ExpectedDigits '67890'
+    }
+    finally {
+        Pop-Location
+    }
 
     Write-Host 'PASS: Portable OCR recognized synthetic English and Ukrainian samples offline.'
 }

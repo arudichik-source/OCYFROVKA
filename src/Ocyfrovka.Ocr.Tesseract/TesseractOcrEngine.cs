@@ -44,6 +44,18 @@ public sealed class TesseractOcrEngine : IOcrEngine
                 $"Додайте відповідні *.traineddata у {tessdata}");
         }
 
+        // Native Windows Tesseract builds may interpret narrow argv paths
+        // using the current ANSI code page, breaking Cyrillic install paths.
+        // Keep the working directory Unicode via CreateProcessW, but pass
+        // ASCII relative paths for tessdata and the staged OCR image.
+        var workingDirectory = Path.GetDirectoryName(executable)!;
+        var inputArgument = Path.GetRelativePath(
+            workingDirectory,
+            request.FilePath);
+        var tessdataArgument = Path.GetRelativePath(
+            workingDirectory,
+            tessdata);
+
         var startInfo = new ProcessStartInfo
         {
             FileName = executable,
@@ -51,13 +63,13 @@ public sealed class TesseractOcrEngine : IOcrEngine
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
-            WorkingDirectory = Path.GetDirectoryName(executable)!
+            WorkingDirectory = workingDirectory
         };
 
-        startInfo.ArgumentList.Add(request.FilePath);
+        startInfo.ArgumentList.Add(inputArgument);
         startInfo.ArgumentList.Add("stdout");
         startInfo.ArgumentList.Add("--tessdata-dir");
-        startInfo.ArgumentList.Add(tessdata);
+        startInfo.ArgumentList.Add(tessdataArgument);
         startInfo.ArgumentList.Add("-l");
         startInfo.ArgumentList.Add(request.Language);
         startInfo.ArgumentList.Add("--psm");
