@@ -2,108 +2,88 @@
 
 **Updated:** 2026-10-07  
 **Repository:** `arudichik-source/OCYFROVKA`  
-**Active branch:** `stage/06-review`  
-**Latest merged PR:** #5 — Stage 5: deterministic OCR layout and table reconstruction  
-**Green main commit after Stage 5:** `7098ecaa533512893c207bddc3b0d2f0631b2773`  
-**Latest verified Stage 6 functional commit:** `25920ada350d581d4f428efe5dbe3a6d7c08e05c`
+**Active branch:** `stage/07-smart-corrector`  
+**Latest merged PR:** #6 — Stage 6: protected OCR review workflow  
+**Green main commit after Stage 6:** `930bce2cd2179644d885a023c28800810ab36c57`  
+**Latest verified Stage 7 functional commit:** `7595b2a8c15ccf303e9f2f2dec1e927642ab7fd0`
 
 ## Fixed decisions
 
-- Windows x64, C# / WPF / .NET 10.
-- Self-contained portable ZIP; no installer/admin rights required.
-- Local/offline OCR only in the base product.
-- Tesseract runtime/models are pinned and hash-verified.
-- Original documents are never overwritten.
-- OCR source text, word coordinates and confidence remain provenance even after user edits.
-- User edits and confirmed values must never be silently overwritten by OCR refresh or auto-correction.
-- Smart correction may propose uncertain changes, but acceptance remains explicit.
+- Fully local/offline base workflow.
+- Original source documents are immutable.
+- OCR provenance is preserved after corrections.
+- Protected user/confirmed review values cannot be silently overwritten.
+- Numeric OCR lookalike substitutions are allowed only in explicitly numeric context.
+- Fuzzy dictionary matches are suggestions, never silent corrections.
+- Real/private dictionaries remain runtime data and are not committed.
 
-## Completed through Stage 5
+## Completed through Stage 6
 
-Stages 1–5 are merged into `main` and green.
+Stages 1–6 are merged into `main` and green.
 
-## Stage 6 — implemented
+## Stage 7 — implemented
 
-New independent `Ocyfrovka.Review` domain:
+New `Ocyfrovka.Dictionary` module:
 
-- `ReviewCellState`:
-  - Recognized;
-  - CorrectedAutomatically;
-  - Suggested;
-  - CorrectedByUser;
-  - ConfirmedByUser;
-  - Error.
-- stable `ReviewCellKey` by row/column;
-- `ReviewCell` stores current value separately from OCR source value;
-- confidence, bounds and source words remain attached as provenance;
-- manual/confirmed cells are protected from recognition refresh;
-- automatic correction cannot overwrite protected cells;
-- suggestions do not change current text until explicitly accepted;
-- stale confirmed cells are retained rather than silently discarded;
-- `ReviewTableSession` merges new OCR/table analysis into an existing review session;
-- `ReviewSessionState`: New / NeedsReview / Reviewed / Error;
-- `ReviewSummary` and document-wide `ReviewDocumentSummary`;
-- confirm-all excludes detected header row.
-
-WPF review UI:
-
-- structured table is editable;
-- per-page review sessions persist while switching pages;
-- raw OCR text persists per page in-session;
-- selected-cell actions:
-  - Confirm;
-  - Confirm all;
-  - Accept suggestion;
-  - Mark error;
-  - Reset to OCR;
-- low-confidence cells are highlighted;
-- confirmed/error/suggested/user-corrected states have distinct visual states;
-- page review state and document-wide review state are displayed;
-- source OCR text is not replaced inside the provenance model when a user edits a cell.
+- `CorrectionFieldKind`: Text / Numeric / Nomenclature;
+- strict schema-v1 JSON dictionary loader;
+- empty private dictionary created automatically under `Data/Dictionaries/nomenclature.json`;
+- UI can validate/import an external JSON dictionary into the portable workspace;
+- dictionary entries contain canonical name, aliases and optional category;
+- exact normalized forms are indexed for fast lookup;
+- nomenclature comparison normalizes whitespace/punctuation and Cyrillic/Latin visual lookalikes;
+- explicit numeric-context correction supports OCR confusions such as O→0, I/l→1, S→5, B→8 only when the resulting value is numeric;
+- arbitrary text is never subjected to numeric substitutions;
+- deterministic Levenshtein similarity and token Jaccard scoring;
+- numeric token mismatches are strongly penalized;
+- unambiguous exact aliases may be auto-corrected;
+- exact canonical matches do not create fake edits;
+- fuzzy matches become `Suggested` review state only;
+- equal-score ambiguous matches remain unresolved;
+- protected manual/confirmed cells are skipped;
+- pending suggestion is visible in the review tooltip;
+- explicit `Прийняти пропозицію` remains required for fuzzy correction.
 
 ## Latest verified CI
 
 Workflow run:
 
-- Run: `37632254623`
-- Commit: `25920ada350d581d4f428efe5dbe3a6d7c08e05c`
+- Run: `37634623703`
+- Commit: `7595b2a8c15ccf303e9f2f2dec1e927642ab7fd0`
 - Result: **SUCCESS**
-- Core/OCR/Imaging/Layout/Review tests: **59/59 PASS**
-- Windows integration tests: **7/7 PASS**
-- Total: **66/66 PASS**
+- Core/OCR/Imaging/Layout/Review/Dictionary tests: **71/71 PASS**
+- Windows integration tests: **9/9 PASS**
+- Total: **80/80 PASS**
 - Tesseract: **v5.5.3.20260724**
 - Portable Windows x64 publish: **SUCCESS**
 - Artifact upload: **SUCCESS**
-- Artifact: `OCYFROVKA_Portable_x64`
-- Artifact ID: `11486417675`
-- Artifact size: `166858939` bytes
-- Artifact SHA256: `e93bf116968cdb23849df856006fca7dbb2e0b98bf077e720bc5a0cbf9f8b106`
+- Artifact ID: `11488270743`
+- Artifact size: `166894846` bytes
+- Artifact SHA256: `8c6f155ecc02fe0a8253c51f3f696183fa1bf21cb57ecc7376f0870ef779aeb4`
 
 ## Immediate next work
 
-1. Open/check PR #6 for Stage 6.
-2. Merge after final green PR check.
-3. Verify post-merge `main`.
-4. Create `stage/07-smart-corrector`.
-5. Implement local dictionary + deterministic SmartCorrector:
-   - normalization;
-   - Unicode/Cyrillic/Latin lookalikes;
-   - numeric-context correction only inside numeric fields;
-   - Levenshtein/token matching;
-   - confidence-ranked suggestions;
-   - no uncertain silent replacement;
-   - feed suggestions into `ReviewCell.SetSuggestion`.
-6. Add tests and keep portable build green.
+1. Open/check PR #7.
+2. Merge Stage 7 after final green check and verify `main`.
+3. Create `stage/08-persistence`.
+4. Add local SQLite persistence:
+   - database under `Data/digitizer.db`;
+   - schema/version table;
+   - documents/pages/review cells/correction memory;
+   - transactional autosave;
+   - restore unfinished review;
+   - preserve confirmed/manual values across application restart;
+   - deterministic tests using temporary databases.
+5. Do not introduce cloud persistence.
 
 ## Technical notes
 
-- Review domain: `src/Ocyfrovka.Review`.
-- Layout domain: `src/Ocyfrovka.Layout`.
-- Review sessions currently persist in memory for the application session.
-- Durable persistence across restarts belongs to the later SQLite stage.
+- Dictionary module: `src/Ocyfrovka.Dictionary`.
+- Private dictionary path: `Data/Dictionaries/nomenclature.json`.
+- Review module: `src/Ocyfrovka.Review`.
+- Durable persistence has not yet been implemented; current review sessions are in-memory until Stage 8.
 - OCR runtime lock remains `build/ocr-runtime.lock.json`.
-- Private OCR inputs remain under `Workspace/Temp/OcrInput`.
 
 ## Data safety
 
-Never commit real user documents, runtime databases, private dictionaries, Workspace/Export/Logs, credentials, tokens or certificates.
+Never commit real documents, private dictionaries, runtime SQLite databases, Workspace/Export/Logs, credentials, tokens or certificates.

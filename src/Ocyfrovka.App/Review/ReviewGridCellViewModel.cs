@@ -68,7 +68,10 @@ internal sealed class ReviewGridCellViewModel : INotifyPropertyChanged
         $"Confidence: {Confidence:0.#}% · {StateText}" +
         (string.Equals(_cell.SourceText, _cell.CurrentText, StringComparison.Ordinal)
             ? string.Empty
-            : $" · OCR: {_cell.SourceText}");
+            : $" · OCR: {_cell.SourceText}") +
+        (HasSuggestion
+            ? $" · Пропозиція: {_cell.SuggestedText}"
+            : string.Empty);
 
     public void Confirm()
     {
