@@ -75,6 +75,40 @@ function Invoke-SyntheticRecognition {
     if (($recognized -replace '\s+', '') -notmatch [regex]::Escape($ExpectedDigits)) {
         throw "Expected test digits '$ExpectedDigits' missing from OCR output ($Language)."
     }
+
+    # Verify the same TSV mode used by TesseractOcrEngine, including
+    # word-level geometry and confidence, not just plaintext OCR.
+    $tsvOutput = & $engine $FilePath stdout --tessdata-dir $tessdata -l $Language --psm 6 tsv 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Tesseract TSV mode failed for $Language (exit $LASTEXITCODE): $tsvOutput"
+    }
+
+    $wordRows = @($tsvOutput | Where-Object { $_ -match '^5\t' })
+    $numberRow = $wordRows |
+        Where-Object { $_ -match [regex]::Escape($ExpectedDigits) } |
+        Select-Object -First 1
+
+    if ([string]::IsNullOrWhiteSpace($numberRow)) {
+        throw "TSV lacks a numeric word '$ExpectedDigits' for $Language."
+    }
+
+    $fields = $numberRow -split "`t"
+    if ($fields.Length -lt 12) {
+        throw "Malformed Tesseract TSV word row for $Language."
+    }
+
+    $width = [int]::Parse($fields[8])
+    $height = [int]::Parse($fields[9])
+    $confidence = [double]::Parse(
+        $fields[10],
+        [System.Globalization.CultureInfo]::InvariantCulture
+    )
+
+    if ($width -le 0 -or $height -le 0 -or $confidence -lt 0) {
+        throw "Invalid TSV word geometry or confidence for $Language."
+    }
+
+    Write-Host "TSV ($Language): word geometry ${width}x${height}, confidence $confidence"
 }
 
 try {
