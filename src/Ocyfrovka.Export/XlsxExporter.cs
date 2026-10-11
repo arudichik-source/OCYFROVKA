@@ -101,7 +101,9 @@ public static class XlsxExporter
 
                 WriteTypedValue(
                     sheet.Cell(rowIndex + 2, column + 1),
-                    text);
+                    text,
+                    ExportColumnClassifier.IsNumericHeader(
+                        table.Headers[column]));
             }
         }
 
@@ -164,9 +166,12 @@ public static class XlsxExporter
 
     private static void WriteTypedValue(
         IXLCell cell,
-        string? text)
+        string? text,
+        bool isNumericColumn)
     {
-        var parsed = ExportValueParser.Parse(text);
+        var parsed = isNumericColumn
+            ? ExportValueParser.Parse(text)
+            : ExportValue.FromText((text ?? string.Empty).Trim());
 
         switch (parsed.Kind)
         {
