@@ -182,7 +182,6 @@ public static class XlsxExporter
 
             default:
                 cell.Value = parsed.Text;
-                cell.DataType = XLDataType.Text;
                 break;
         }
     }
