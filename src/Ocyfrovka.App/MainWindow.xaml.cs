@@ -5,6 +5,7 @@ using Ocyfrovka.Core.Documents;
 using Ocyfrovka.Core.Input;
 using Ocyfrovka.Core.Ocr;
 using Ocyfrovka.Dictionary;
+using Ocyfrovka.Export;
 using Ocyfrovka.Imaging;
 using Ocyfrovka.Layout;
 using Ocyfrovka.Review;
@@ -272,6 +273,102 @@ public partial class MainWindow : Window
         ClearOcrOutput();
         RefreshPages(next);
         StatusText.Text = $"Stage 8: у документі {_document.Count} стор.";
+    }
+
+    private void Export_Click(object sender, RoutedEventArgs e)
+    {
+        if (GetSelectedPage() is not { } page ||
+            !_reviewSessions.TryGetValue(page.Id, out var session))
+        {
+            MessageBox.Show(
+                this,
+                "Спочатку оцифруйте та перевірте таблицю вибраної сторінки.",
+                "ОЦИФРОВКА — експорт",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        if (session.GetSummary().State != ReviewSessionState.Reviewed)
+        {
+            MessageBox.Show(
+                this,
+                "Таблиця потребує перевірки. Підтвердьте всі значення перед експортом.",
+                "ОЦИФРОВКА — експорт",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var exportDirectory = Path.Combine(
+            AppContext.BaseDirectory,
+            "Export");
+
+        Directory.CreateDirectory(exportDirectory);
+
+        var saveDialog = new SaveFileDialog
+        {
+            Title = "Зберегти перевірену таблицю",
+            InitialDirectory = exportDirectory,
+            FileName = Path.GetFileNameWithoutExtension(page.FileName) +
+                       $"-сторінка-{page.SourceFrameIndex + 1}",
+            Filter = "Excel (*.xlsx)|*.xlsx|CSV (*.csv)|*.csv|Текст (*.txt)|*.txt",
+            FilterIndex = 1,
+            DefaultExt = ".xlsx",
+            AddExtension = true,
+            OverwritePrompt = true
+        };
+
+        if (saveDialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var options = new ExportOptions(
+                RequireReviewed: true,
+                IncludeMetadata:
+                    IncludeMetadataCheckBox.IsChecked == true);
+
+            switch (saveDialog.FilterIndex)
+            {
+                case 2:
+                    DelimitedExporter.ExportCsv(
+                        session,
+                        saveDialog.FileName,
+                        options);
+                    break;
+
+                case 3:
+                    DelimitedExporter.ExportText(
+                        session,
+                        saveDialog.FileName,
+                        options);
+                    break;
+
+                default:
+                    XlsxExporter.Export(
+                        session,
+                        saveDialog.FileName,
+                        options);
+                    break;
+            }
+
+            StatusText.Text =
+                $"Stage 9: експорт завершено · {Path.GetFileName(saveDialog.FileName)}";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "ОЦИФРОВКА — помилка експорту",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            StatusText.Text =
+                "Stage 9: експорт не виконано.";
+        }
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
