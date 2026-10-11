@@ -64,6 +64,14 @@ public sealed class XlsxExporterTests : IDisposable
             data.Cell("D2").GetString());
         Assert.False(data.Cell("D2").HasFormula);
 
+        Assert.Equal(
+            XLDataType.Text,
+            data.Cell("C3").DataType);
+        Assert.Equal("123", data.Cell("C3").GetString());
+        Assert.Equal(
+            XLDataType.Number,
+            data.Cell("B3").DataType);
+
         var metadata = workbook.Worksheet("Метадані");
         Assert.Equal(
             "Поточне значення",
@@ -130,6 +138,14 @@ public sealed class XlsxExporterTests : IDisposable
                         Cell(1, 1, "12,5", 92),
                         Cell(1, 2, "00123", 92),
                         Cell(1, 3, "=1+1", 92)
+                    ]),
+                new TableRow(
+                    2,
+                    [
+                        Cell(2, 0, "Інший зразок", 95),
+                        Cell(2, 1, "8", 95),
+                        Cell(2, 2, "123", 95),
+                        Cell(2, 3, "Текст", 95)
                     ])
             ],
             4,
