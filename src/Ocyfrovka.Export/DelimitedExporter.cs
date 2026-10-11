@@ -134,9 +134,13 @@ public static class DelimitedExporter
             return text;
         }
 
-        return """ +
-               text.Replace(""", """") +
-               """;
+        const char quote = '"';
+
+        return quote +
+               text.Replace(
+                   quote.ToString(),
+                   new string(quote, 2)) +
+               quote;
     }
 
     private static bool IsFormulaLike(string value)
