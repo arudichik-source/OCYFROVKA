@@ -270,6 +270,7 @@ public partial class MainWindow : Window
             .index;
 
         _ocrQueue = null;
+        RefreshQueueList();
         _document.Remove(page.Id);
         _processedPreviews.Remove(page.Id);
         _reviewSessions.Remove(page.Id);
@@ -387,6 +388,7 @@ public partial class MainWindow : Window
     {
         if (_isOcrRunning) return;
         _ocrQueue = null;
+        RefreshQueueList();
         _document.Clear();
         _processedPreviews.Clear();
         _reviewSessions.Clear();
@@ -547,6 +549,19 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ShowQueue_Click(object sender, RoutedEventArgs e)
+    {
+        QueueItemsList.Focus();
+        if (_ocrQueue is not null)
+            RefreshQueueList();
+    }
+
+    private void RefreshQueueList()
+    {
+        QueueItemsList.ItemsSource = null;
+        QueueItemsList.ItemsSource = _ocrQueue?.Snapshot();
+    }
+
     private async void QueueAll_Click(object sender, RoutedEventArgs e)
     {
         if (_isOcrRunning || _document.Count == 0 || !CheckOcrRuntime())
@@ -557,6 +572,7 @@ public partial class MainWindow : Window
             queue.Enqueue(page, page.DisplayName);
 
         _ocrQueue = queue;
+        RefreshQueueList();
         await RunQueueAsync(queue);
     }
 
@@ -572,6 +588,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        RefreshQueueList();
         await RunQueueAsync(_ocrQueue);
     }
 
@@ -596,6 +613,7 @@ public partial class MainWindow : Window
 
         var progress = new Progress<QueueProgress>(value =>
         {
+            RefreshQueueList();
             QueueStatusText.Text =
                 $"Готово {value.Completed}/{value.Total} · " +
                 $"помилок {value.Failed} · скасовано {value.Canceled}" +
@@ -627,6 +645,7 @@ public partial class MainWindow : Window
         }
         finally
         {
+            RefreshQueueList();
             _queueCancellation = null;
             _isOcrRunning = false;
             CancelQueueButton.IsEnabled = false;
