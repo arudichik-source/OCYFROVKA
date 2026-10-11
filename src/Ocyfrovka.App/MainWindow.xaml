@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="ОЦИФРОВКА" Height="840" Width="1320" MinHeight="700" MinWidth="1080"
         Background="{StaticResource BgBrush}" Foreground="{StaticResource TextBrush}"
-        AllowDrop="True" Drop="Window_Drop" Loaded="Window_Loaded">
+        AllowDrop="True" Drop="Window_Drop" Loaded="Window_Loaded" Closed="Window_Closed">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="64"/>
@@ -33,17 +33,52 @@
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="#2A2F3A" BorderThickness="0,0,1,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="12,18">
                     <TextBlock Text="РОЗДІЛИ" Margin="8,0,8,10" FontSize="11" Foreground="{StaticResource MutedTextBrush}"/>
                     <Button Content="Нове оцифрування" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
-                    <Button Content="Черга" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
+                    <Button Content="Черга" Click="ShowQueue_Click" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Перевірка" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Готові" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Історія" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Довідники" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Шаблони" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Налаштування" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
+                    <Separator Margin="4,14,4,10"/>
+                    <TextBlock Text="ПАКЕТНИЙ OCR" FontSize="11" Margin="8,0,8,8"
+                               Foreground="{StaticResource MutedTextBrush}"/>
+                    <Button x:Name="QueueAllButton" Content="Оцифрувати всі сторінки"
+                            Click="QueueAll_Click" Padding="8,8" Margin="0,2"
+                            HorizontalContentAlignment="Left"/>
+                    <Button x:Name="CancelQueueButton" Content="Скасувати чергу"
+                            Click="CancelQueue_Click" Padding="8,8" Margin="0,2"
+                            IsEnabled="False" HorizontalContentAlignment="Left"/>
+                    <Button x:Name="RetryQueueButton" Content="Повторити помилки"
+                            Click="RetryQueue_Click" Padding="8,8" Margin="0,2"
+                            HorizontalContentAlignment="Left"/>
+                    <TextBlock x:Name="QueueStatusText" Text="Черга не запущена."
+                               TextWrapping="Wrap" Margin="8,12,8,0"
+                               FontSize="11" Foreground="{StaticResource MutedTextBrush}"/>
+                    <ListBox x:Name="QueueItemsList" MaxHeight="145" Margin="2,8,2,0"
+                             Background="#151820" Foreground="{StaticResource TextBrush}"
+                             BorderBrush="#343A46" BorderThickness="1">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="4,3">
+                                    <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock FontSize="10" Foreground="{StaticResource MutedTextBrush}">
+                                        <Run Text="{Binding Status}"/>
+                                        <Run Text=" · спроб: "/>
+                                        <Run Text="{Binding Attempts}"/>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding Error}" FontSize="10" Foreground="#DBA2A2"
+                                               TextWrapping="Wrap" MaxHeight="35"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </StackPanel>
+                </ScrollViewer>
             </Border>
 
             <Grid Grid.Column="1" Margin="18">

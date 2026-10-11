@@ -10,6 +10,7 @@ using Ocyfrovka.Imaging;
 using Ocyfrovka.Layout;
 using Ocyfrovka.Review;
 using Ocyfrovka.Ocr.Tesseract;
+using Ocyfrovka.Queue;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,6 +27,8 @@ public partial class MainWindow : Window
     private readonly Dictionary<Guid, ReviewTableSession> _reviewSessions = [];
     private readonly Dictionary<Guid, string> _ocrTextByPage = [];
     private readonly ReviewPersistenceService _persistence;
+    private ProcessingQueue<DocumentPage>? _ocrQueue;
+    private CancellationTokenSource? _queueCancellation;
     private ReviewGridCellViewModel? _selectedReviewCell;
 
     private bool _isImporting;
@@ -45,9 +48,14 @@ public partial class MainWindow : Window
         RefreshOcrLanguages();
     }
 
+    private void Window_Closed(object sender, EventArgs e)
+    {
+        _queueCancellation?.Cancel();
+    }
+
     private async void AddFiles_Click(object sender, RoutedEventArgs e)
     {
-        if (_isImporting)
+        if (_isOcrRunning || _isImporting)
         {
             return;
         }
@@ -66,7 +74,7 @@ public partial class MainWindow : Window
 
     private async void Window_Drop(object sender, DragEventArgs e)
     {
-        if (_isImporting)
+        if (_isOcrRunning || _isImporting)
         {
             return;
         }
@@ -220,6 +228,7 @@ public partial class MainWindow : Window
 
     private void RotateLeft_Click(object sender, RoutedEventArgs e)
     {
+        if (_isOcrRunning) return;
         if (GetSelectedPage() is not { } page)
         {
             return;
@@ -234,6 +243,7 @@ public partial class MainWindow : Window
 
     private void RotateRight_Click(object sender, RoutedEventArgs e)
     {
+        if (_isOcrRunning) return;
         if (GetSelectedPage() is not { } page)
         {
             return;
@@ -248,6 +258,7 @@ public partial class MainWindow : Window
 
     private void RemovePage_Click(object sender, RoutedEventArgs e)
     {
+        if (_isOcrRunning) return;
         if (GetSelectedPage() is not { } page)
         {
             return;
@@ -258,6 +269,8 @@ public partial class MainWindow : Window
             .First(x => x.value.Id == page.Id)
             .index;
 
+        _ocrQueue = null;
+        RefreshQueueList();
         _document.Remove(page.Id);
         _processedPreviews.Remove(page.Id);
         _reviewSessions.Remove(page.Id);
@@ -373,6 +386,9 @@ public partial class MainWindow : Window
 
     private void Clear_Click(object sender, RoutedEventArgs e)
     {
+        if (_isOcrRunning) return;
+        _ocrQueue = null;
+        RefreshQueueList();
         _document.Clear();
         _processedPreviews.Clear();
         _reviewSessions.Clear();
@@ -496,82 +512,217 @@ public partial class MainWindow : Window
         if (_isOcrRunning || GetSelectedPage() is not { } page)
         {
             if (_document.Count == 0)
-            {
-                MessageBox.Show(
-                    this,
-                    "Спочатку додайте фото, скан або PDF-документ.",
-                    "ОЦИФРОВКА",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-            }
-
+                StatusText.Text = "Додайте хоча б одну сторінку.";
             return;
         }
 
-        if (!TesseractRuntimeLocator.IsRuntimeAvailable(AppContext.BaseDirectory))
-        {
-            MessageBox.Show(
-                this,
-                "Локальний Tesseract runtime відсутній у portable-збірці. Перевірте папку Engine\\OCR.",
-                "ОЦИФРОВКА — OCR",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+        if (!CheckOcrRuntime())
             return;
-        }
 
-        var language = OcrLanguageComboBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(language))
-        {
-            language = "ukr";
-        }
-
+        var language = GetOcrLanguage();
         _isOcrRunning = true;
         DigitizeButton.IsEnabled = false;
-        StatusText.Text = $"Stage 8: OCR {language}…";
+        QueueAllButton.IsEnabled = false;
+        RetryQueueButton.IsEnabled = false;
+        StatusText.Text = $"Stage 10: OCR {language}…";
 
         try
         {
-            BitmapSource inputBitmap =
-                _showProcessed && _processedPreviews.TryGetValue(page.Id, out var processed)
-                    ? processed.Image
-                    : ImagePreviewLoader.Load(page);
-
-            var inputPath = await OcrInputMaterializer.SavePngAsync(
-                inputBitmap,
-                page.Id,
-                AppContext.BaseDirectory);
-
-            var engine = new TesseractOcrEngine(AppContext.BaseDirectory);
-            var result = await engine.RecognizeAsync(
-                new OcrRequest(
-                    FilePath: inputPath,
-                    Language: language,
-                    Profile: "auto"));
-
-            _ocrTextByPage[page.Id] = result.Text;
-            OcrTextBox.Text = result.Text;
-            ShowStructuredLayout(page.Id, result.Words);
-            SavePageState(page);
-
+            var result = await RecognizePageAsync(
+                page, language, preferProcessed: _showProcessed,
+                CancellationToken.None);
             StatusText.Text =
-                $"Stage 8: OCR + структура завершені · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
+                $"OCR завершено · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                this,
-                ex.Message,
-                "ОЦИФРОВКА — OCR",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-
-            StatusText.Text = "Stage 8: OCR завершився помилкою.";
+            MessageBox.Show(this, ex.Message, "ОЦИФРОВКА — OCR",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            StatusText.Text = "OCR сторінки завершився помилкою.";
         }
         finally
         {
             _isOcrRunning = false;
             DigitizeButton.IsEnabled = true;
+            QueueAllButton.IsEnabled = true;
+            RetryQueueButton.IsEnabled = true;
         }
+    }
+
+    private void ShowQueue_Click(object sender, RoutedEventArgs e)
+    {
+        QueueItemsList.Focus();
+        if (_ocrQueue is not null)
+            RefreshQueueList();
+    }
+
+    private void RefreshQueueList()
+    {
+        QueueItemsList.ItemsSource = null;
+        QueueItemsList.ItemsSource = _ocrQueue?.Snapshot();
+    }
+
+    private async void QueueAll_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isOcrRunning || _document.Count == 0 || !CheckOcrRuntime())
+            return;
+
+        var queue = new ProcessingQueue<DocumentPage>();
+        foreach (var page in _document.Pages.ToArray())
+            queue.Enqueue(page, page.DisplayName);
+
+        _ocrQueue = queue;
+        RefreshQueueList();
+        await RunQueueAsync(queue);
+    }
+
+    private async void RetryQueue_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isOcrRunning || _ocrQueue is null || !CheckOcrRuntime())
+            return;
+
+        var count = _ocrQueue.RetryFailed();
+        if (count == 0)
+        {
+            QueueStatusText.Text = "У черзі немає помилок для повторення.";
+            return;
+        }
+
+        RefreshQueueList();
+        await RunQueueAsync(_ocrQueue);
+    }
+
+    private void CancelQueue_Click(object sender, RoutedEventArgs e)
+    {
+        _queueCancellation?.Cancel();
+        CancelQueueButton.IsEnabled = false;
+        QueueStatusText.Text = "Скасовую поточну сторінку та чергу…";
+    }
+
+    private async Task RunQueueAsync(ProcessingQueue<DocumentPage> queue)
+    {
+        _isOcrRunning = true;
+        DigitizeButton.IsEnabled = false;
+        QueueAllButton.IsEnabled = false;
+        RetryQueueButton.IsEnabled = false;
+        CancelQueueButton.IsEnabled = true;
+
+        using var cts = new CancellationTokenSource();
+        _queueCancellation = cts;
+        var language = GetOcrLanguage();
+
+        var progress = new Progress<QueueProgress>(value =>
+        {
+            RefreshQueueList();
+            QueueStatusText.Text =
+                $"Готово {value.Completed}/{value.Total} · " +
+                $"помилок {value.Failed} · скасовано {value.Canceled}" +
+                (value.ActiveItem is null ? "" : $" · {value.ActiveItem}");
+        });
+
+        try
+        {
+            var result = await queue.RunAsync(
+                async (page, cancellation) =>
+                {
+                    await RecognizePageAsync(
+                        page, language, preferProcessed: true, cancellation);
+                },
+                maxAttempts: 1,
+                progress: progress,
+                cancellationToken: cts.Token);
+
+            QueueStatusText.Text =
+                $"Завершено: {result.Completed}/{result.Total} · " +
+                $"помилок {result.Failed} · скасовано {result.Canceled}.";
+            StatusText.Text = result.Failed == 0 && result.Canceled == 0
+                ? "Stage 10: пакетний OCR завершено."
+                : "Stage 10: черга завершена з помилками або скасуванням.";
+        }
+        catch (Exception ex)
+        {
+            QueueStatusText.Text = $"Помилка черги: {ex.Message}";
+        }
+        finally
+        {
+            RefreshQueueList();
+            _queueCancellation = null;
+            _isOcrRunning = false;
+            CancelQueueButton.IsEnabled = false;
+            DigitizeButton.IsEnabled = true;
+            QueueAllButton.IsEnabled = true;
+            RetryQueueButton.IsEnabled = true;
+        }
+    }
+
+    private async Task<OcrResult> RecognizePageAsync(
+        DocumentPage page,
+        string language,
+        bool preferProcessed,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        BitmapSource bitmap =
+            preferProcessed && _processedPreviews.TryGetValue(page.Id, out var processed)
+                ? processed.Image
+                : ImagePreviewLoader.Load(page);
+
+        var inputPath = await OcrInputMaterializer.SavePngAsync(
+            bitmap, page.Id, AppContext.BaseDirectory, cancellationToken);
+
+        var engine = new TesseractOcrEngine(AppContext.BaseDirectory);
+        var result = await engine.RecognizeAsync(
+            new OcrRequest(inputPath, language, "auto"),
+            cancellationToken);
+
+        cancellationToken.ThrowIfCancellationRequested();
+        _ocrTextByPage[page.Id] = result.Text;
+
+        if (GetSelectedPage()?.Id == page.Id)
+        {
+            OcrTextBox.Text = result.Text;
+            ShowStructuredLayout(page.Id, result.Words);
+        }
+        else
+        {
+            var layout = TableLayoutAnalyzer.Analyze(result.Words);
+            if (layout.IsLikelyTable && layout.Rows.Count > 0 && layout.ColumnCount >= 2)
+            {
+                if (_reviewSessions.TryGetValue(page.Id, out var session))
+                    session.Merge(layout);
+                else
+                {
+                    session = new ReviewTableSession(layout);
+                    _reviewSessions[page.Id] = session;
+                }
+
+                CorrectionMemorySuggestionService.Apply(session, _persistence);
+            }
+        }
+
+        SavePageState(page);
+        return result;
+    }
+
+    private bool CheckOcrRuntime()
+    {
+        if (TesseractRuntimeLocator.IsRuntimeAvailable(AppContext.BaseDirectory))
+            return true;
+
+        MessageBox.Show(
+            this,
+            "Локальний OCR runtime відсутній. Перевірте Engine\\\\OCR.",
+            "ОЦИФРОВКА — OCR",
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+        return false;
+    }
+
+    private string GetOcrLanguage()
+    {
+        var language = OcrLanguageComboBox.Text.Trim();
+        return string.IsNullOrWhiteSpace(language) ? "ukr" : language;
     }
 
     private void ClearOcrOutput()

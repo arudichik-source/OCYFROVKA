@@ -89,12 +89,17 @@
 - [x] Windows portable build verification (126/126 tests).
 
 ## Stage 10 — Queue and background processing
-- [ ] Deterministic document/page processing queue.
-- [ ] Cancellation and bounded concurrency.
-- [ ] Progress and per-item status, retry for failed jobs.
-- [ ] UI integration without blocking WPF thread.
-- [ ] Durable queue recovery where needed.
-- [ ] Synthetic regression tests.
+- [x] Deterministic FIFO page-processing queue.
+- [x] Bounded concurrency (one local OCR process by default).
+- [x] CancellationToken support including termination of running Tesseract.
+- [x] Per-item status, failure isolation and bounded retry.
+- [x] UI commands: all pages, cancel, retry failed.
+- [x] Progress counter and error/status list in scrollable navigation pane.
+- [x] Per-page OCR/review persistence through existing SQLite integration.
+- [x] Synthetic unit tests for FIFO, retry, cancellation and reentrancy.
+- [x] Windows CI confirmation for Stage 10 (133/133 tests and portable publish).
+- [ ] Optional durable queue job-state recovery across restarts (deferred).
+- [ ] Expanded end-to-end OCR queue tests on non-sensitive fixtures (acceptance hardening).
 
 ## Stage 11+
 - [ ] Optional interactive four-corner editor.
