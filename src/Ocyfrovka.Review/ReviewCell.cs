@@ -5,6 +5,26 @@ namespace Ocyfrovka.Review;
 
 public sealed class ReviewCell
 {
+    private ReviewCell(
+        ReviewCellKey key,
+        string sourceText,
+        string currentText,
+        string? suggestedText,
+        double confidence,
+        LayoutBounds bounds,
+        IReadOnlyList<OcrWord> sourceWords,
+        ReviewCellState state)
+    {
+        Key = key;
+        SourceText = sourceText;
+        CurrentText = currentText;
+        SuggestedText = suggestedText;
+        Confidence = confidence;
+        Bounds = bounds;
+        SourceWords = sourceWords.ToArray();
+        State = state;
+    }
+
     public ReviewCell(TableCell source)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -36,6 +56,33 @@ public sealed class ReviewCell
 
     public bool IsProtectedFromRecognitionRefresh =>
         State is ReviewCellState.CorrectedByUser or ReviewCellState.ConfirmedByUser;
+
+    public ReviewCellSnapshot ToSnapshot()
+        => new(
+            Key.RowIndex,
+            Key.ColumnIndex,
+            SourceText,
+            CurrentText,
+            SuggestedText,
+            Confidence,
+            Bounds,
+            SourceWords.ToArray(),
+            State);
+
+    public static ReviewCell FromSnapshot(ReviewCellSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        return new ReviewCell(
+            new ReviewCellKey(snapshot.RowIndex, snapshot.ColumnIndex),
+            snapshot.SourceText ?? string.Empty,
+            snapshot.CurrentText ?? string.Empty,
+            snapshot.SuggestedText,
+            snapshot.Confidence,
+            snapshot.Bounds,
+            snapshot.SourceWords ?? [],
+            snapshot.State);
+    }
 
     public void RefreshRecognition(TableCell source)
     {

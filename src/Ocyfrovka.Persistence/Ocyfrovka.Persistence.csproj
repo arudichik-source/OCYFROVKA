@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ocyfrovka.Core\Ocyfrovka.Core.csproj" />
+    <ProjectReference Include="..\Ocyfrovka.Review\Ocyfrovka.Review.csproj" />
+  </ItemGroup>
+</Project>

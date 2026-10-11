@@ -6,10 +6,50 @@ public sealed class ReviewTableSession
 {
     private readonly Dictionary<ReviewCellKey, ReviewCell> _cells = [];
 
+    private ReviewTableSession()
+    {
+    }
+
     public ReviewTableSession(TableLayout layout)
     {
         Merge(layout);
     }
+
+    public static ReviewTableSession FromSnapshot(ReviewTableSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        var session = new ReviewTableSession
+        {
+            ColumnCount = snapshot.ColumnCount,
+            HeaderRowIndex = snapshot.HeaderRowIndex
+        };
+
+        foreach (var cellSnapshot in snapshot.Cells ?? [])
+        {
+            var cell = ReviewCell.FromSnapshot(cellSnapshot);
+            session._cells[cell.Key] = cell;
+        }
+
+        session.ColumnCount = Math.Max(
+            session.ColumnCount,
+            session._cells.Keys
+                .Select(key => key.ColumnIndex + 1)
+                .DefaultIfEmpty(0)
+                .Max());
+
+        return session;
+    }
+
+    public ReviewTableSnapshot ToSnapshot()
+        => new(
+            ColumnCount,
+            HeaderRowIndex,
+            _cells.Values
+                .OrderBy(cell => cell.Key.RowIndex)
+                .ThenBy(cell => cell.Key.ColumnIndex)
+                .Select(cell => cell.ToSnapshot())
+                .ToArray());
 
     public int ColumnCount { get; private set; }
 

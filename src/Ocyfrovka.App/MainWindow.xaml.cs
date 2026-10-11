@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private readonly Dictionary<Guid, ProcessedPreview> _processedPreviews = [];
     private readonly Dictionary<Guid, ReviewTableSession> _reviewSessions = [];
     private readonly Dictionary<Guid, string> _ocrTextByPage = [];
+    private readonly ReviewPersistenceService _persistence;
     private ReviewGridCellViewModel? _selectedReviewCell;
 
     private bool _isImporting;
@@ -34,6 +35,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _persistence = new ReviewPersistenceService(AppContext.BaseDirectory);
         RefreshPages();
     }
 
@@ -77,7 +79,7 @@ public partial class MainWindow : Window
     private async Task AddFilesAsync(IEnumerable<string> paths)
     {
         _isImporting = true;
-        StatusText.Text = "Stage 7: імпорт файлів…";
+        StatusText.Text = "Stage 8: імпорт файлів…";
 
         try
         {
@@ -114,6 +116,7 @@ public partial class MainWindow : Window
                         {
                             added++;
                             lastAdded = page;
+                            RestorePersistedState(page);
                         }
                     }
                 }
@@ -148,8 +151,8 @@ public partial class MainWindow : Window
             }
 
             StatusText.Text = added > 0
-                ? $"Stage 7: у документі {_document.Count} стор."
-                : "Stage 7: нових сторінок не додано.";
+                ? $"Stage 8: у документі {_document.Count} стор."
+                : "Stage 8: нових сторінок не додано.";
 
             if (unsupported > 0 || errors.Count > 0)
             {
@@ -223,6 +226,7 @@ public partial class MainWindow : Window
 
         page.RotateCounterClockwise();
         InvalidateProcessed(page);
+        SavePageState(page);
         ClearOcrOutput();
         RefreshPages(page);
     }
@@ -236,6 +240,7 @@ public partial class MainWindow : Window
 
         page.RotateClockwise();
         InvalidateProcessed(page);
+        SavePageState(page);
         ClearOcrOutput();
         RefreshPages(page);
     }
@@ -266,7 +271,7 @@ public partial class MainWindow : Window
         _showProcessed = false;
         ClearOcrOutput();
         RefreshPages(next);
-        StatusText.Text = $"Stage 7: у документі {_document.Count} стор.";
+        StatusText.Text = $"Stage 8: у документі {_document.Count} стор.";
     }
 
     private void Clear_Click(object sender, RoutedEventArgs e)
@@ -278,7 +283,7 @@ public partial class MainWindow : Window
         _showProcessed = false;
         ClearOcrOutput();
         RefreshPages();
-        StatusText.Text = "Stage 7: документ очищено.";
+        StatusText.Text = "Stage 8: документ очищено.";
     }
 
     private void ShowOriginal_Click(object sender, RoutedEventArgs e)
@@ -297,7 +302,7 @@ public partial class MainWindow : Window
         if (!_processedPreviews.ContainsKey(page.Id))
         {
             _showProcessed = false;
-            StatusText.Text = "Stage 7: спочатку натисніть «Обробити» для цієї сторінки.";
+            StatusText.Text = "Stage 8: спочатку натисніть «Обробити» для цієї сторінки.";
             ShowSelectedPreview();
             return;
         }
@@ -311,7 +316,7 @@ public partial class MainWindow : Window
         if (GetSelectedPage() is not { } page ||
             !_processedPreviews.TryGetValue(page.Id, out var processed))
         {
-            StatusText.Text = "Stage 7: спочатку обробіть сторінку.";
+            StatusText.Text = "Stage 8: спочатку обробіть сторінку.";
             return;
         }
 
@@ -322,8 +327,8 @@ public partial class MainWindow : Window
         ShowSelectedPreview();
 
         StatusText.Text = cropped.CropApplied
-            ? $"Stage 7: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
-            : "Stage 7: межі збігаються з повним кадром.";
+            ? $"Stage 8: preview обрізано до {cropped.Image.PixelWidth}×{cropped.Image.PixelHeight}."
+            : "Stage 8: межі збігаються з повним кадром.";
     }
 
     private void ResetCrop_Click(object sender, RoutedEventArgs e)
@@ -340,7 +345,7 @@ public partial class MainWindow : Window
         _showProcessed = true;
         ClearOcrOutput();
         ShowSelectedPreview();
-        StatusText.Text = "Stage 7: показано повний оброблений кадр.";
+        StatusText.Text = "Stage 8: показано повний оброблений кадр.";
     }
 
     private async void ProcessSelected_Click(object sender, RoutedEventArgs e)
@@ -351,7 +356,7 @@ public partial class MainWindow : Window
         }
 
         _isProcessing = true;
-        StatusText.Text = "Stage 7: обробка сторінки…";
+        StatusText.Text = "Stage 8: обробка сторінки…";
 
         try
         {
@@ -367,7 +372,7 @@ public partial class MainWindow : Window
             ShowSelectedPreview();
 
             StatusText.Text =
-                $"Stage 7: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
+                $"Stage 8: оброблено · якість {processed.Quality.OverallScore:0.#}/100";
         }
         catch (Exception ex)
         {
@@ -381,7 +386,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 7: помилка обробки сторінки.";
+            StatusText.Text = "Stage 8: помилка обробки сторінки.";
         }
         finally
         {
@@ -425,7 +430,7 @@ public partial class MainWindow : Window
 
         _isOcrRunning = true;
         DigitizeButton.IsEnabled = false;
-        StatusText.Text = $"Stage 7: OCR {language}…";
+        StatusText.Text = $"Stage 8: OCR {language}…";
 
         try
         {
@@ -449,9 +454,10 @@ public partial class MainWindow : Window
             _ocrTextByPage[page.Id] = result.Text;
             OcrTextBox.Text = result.Text;
             ShowStructuredLayout(page.Id, result.Words);
+            SavePageState(page);
 
             StatusText.Text =
-                $"Stage 7: OCR + структура завершені · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
+                $"Stage 8: OCR + структура завершені · confidence {result.Confidence:0.#}% · слів {result.Words.Count}";
         }
         catch (Exception ex)
         {
@@ -462,7 +468,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 7: OCR завершився помилкою.";
+            StatusText.Text = "Stage 8: OCR завершився помилкою.";
         }
         finally
         {
@@ -514,6 +520,7 @@ public partial class MainWindow : Window
             _reviewSessions[pageId] = session;
         }
 
+        CorrectionMemorySuggestionService.Apply(session, _persistence);
         ShowReviewSession(session);
     }
 
@@ -639,6 +646,18 @@ public partial class MainWindow : Window
         };
     }
 
+    private void StructuredTableGrid_CellEditEnding(
+        object sender,
+        DataGridCellEditEndingEventArgs e)
+    {
+        Dispatcher.BeginInvoke(
+            new Action(() =>
+            {
+                SaveSelectedPageState();
+                RefreshReviewStatus();
+            }));
+    }
+
     private void StructuredTableGrid_SelectedCellsChanged(
         object sender,
         SelectedCellsChangedEventArgs e)
@@ -662,7 +681,7 @@ public partial class MainWindow : Window
         if (_selectedReviewCell is not null)
         {
             StatusText.Text =
-                $"Stage 7: клітинка R{_selectedReviewCell.RowIndex + 1}C{_selectedReviewCell.ColumnIndex + 1} · " +
+                $"Stage 8: клітинка R{_selectedReviewCell.RowIndex + 1}C{_selectedReviewCell.ColumnIndex + 1} · " +
                 $"{_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}%";
         }
     }
@@ -671,12 +690,14 @@ public partial class MainWindow : Window
     {
         if (_selectedReviewCell is null)
         {
-            StatusText.Text = "Stage 7: виберіть клітинку для підтвердження.";
+            StatusText.Text = "Stage 8: виберіть клітинку для підтвердження.";
             return;
         }
 
+        RememberSelectedCorrection();
         _selectedReviewCell.Confirm();
         StructuredTableGrid.Items.Refresh();
+        SaveSelectedPageState();
         RefreshReviewStatus();
     }
 
@@ -685,13 +706,15 @@ public partial class MainWindow : Window
         if (GetSelectedPage() is not { } page ||
             !_reviewSessions.TryGetValue(page.Id, out var session))
         {
-            StatusText.Text = "Stage 7: немає таблиці для підтвердження.";
+            StatusText.Text = "Stage 8: немає таблиці для підтвердження.";
             return;
         }
 
+        RememberSessionCorrections(session);
         session.ConfirmAll();
+        SavePageState(page);
         ShowReviewSession(session);
-        StatusText.Text = "Stage 7: усі клітинки поточної таблиці підтверджено.";
+        StatusText.Text = "Stage 8: усі клітинки поточної таблиці підтверджено.";
     }
 
     private void ImportDictionary_Click(object sender, RoutedEventArgs e)
@@ -735,7 +758,7 @@ public partial class MainWindow : Window
             }
 
             StatusText.Text =
-                $"Stage 7: довідник імпортовано · записів {catalog.Entries.Count}.";
+                $"Stage 8: довідник імпортовано · записів {catalog.Entries.Count}.";
         }
         catch (Exception ex)
         {
@@ -746,7 +769,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 7: імпорт довідника не виконано.";
+            StatusText.Text = "Stage 8: імпорт довідника не виконано.";
         }
     }
 
@@ -755,7 +778,7 @@ public partial class MainWindow : Window
         if (GetSelectedPage() is not { } page ||
             !_reviewSessions.TryGetValue(page.Id, out var session))
         {
-            StatusText.Text = "Stage 7: спочатку виконайте OCR і реконструкцію таблиці.";
+            StatusText.Text = "Stage 8: спочатку виконайте OCR і реконструкцію таблиці.";
             return;
         }
 
@@ -772,7 +795,7 @@ public partial class MainWindow : Window
             if (catalog.Entries.Count == 0)
             {
                 StatusText.Text =
-                    "Stage 7: локальний довідник nomenclature.json поки порожній.";
+                    "Stage 8: локальний довідник nomenclature.json поки порожній.";
                 return;
             }
 
@@ -780,10 +803,11 @@ public partial class MainWindow : Window
                 session,
                 catalog);
 
+            SavePageState(page);
             ShowReviewSession(session);
 
             StatusText.Text =
-                $"Stage 7: довідник · авто {result.AutoCorrected} · " +
+                $"Stage 8: довідник · авто {result.AutoCorrected} · " +
                 $"пропозицій {result.Suggested} · " +
                 $"неоднозначних {result.Ambiguous} · " +
                 $"захищених {result.Protected}.";
@@ -797,7 +821,7 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
-            StatusText.Text = "Stage 7: помилка читання локального довідника.";
+            StatusText.Text = "Stage 8: помилка читання локального довідника.";
         }
     }
 
@@ -805,18 +829,20 @@ public partial class MainWindow : Window
     {
         if (_selectedReviewCell is null)
         {
-            StatusText.Text = "Stage 7: виберіть клітинку з пропозицією.";
+            StatusText.Text = "Stage 8: виберіть клітинку з пропозицією.";
             return;
         }
 
         if (!_selectedReviewCell.HasSuggestion)
         {
-            StatusText.Text = "Stage 7: для вибраної клітинки немає активної пропозиції.";
+            StatusText.Text = "Stage 8: для вибраної клітинки немає активної пропозиції.";
             return;
         }
 
         _selectedReviewCell.AcceptSuggestion();
+        RememberSelectedCorrection();
         StructuredTableGrid.Items.Refresh();
+        SaveSelectedPageState();
         RefreshReviewStatus();
     }
 
@@ -824,12 +850,13 @@ public partial class MainWindow : Window
     {
         if (_selectedReviewCell is null)
         {
-            StatusText.Text = "Stage 7: виберіть проблемну клітинку.";
+            StatusText.Text = "Stage 8: виберіть проблемну клітинку.";
             return;
         }
 
         _selectedReviewCell.MarkError();
         StructuredTableGrid.Items.Refresh();
+        SaveSelectedPageState();
         RefreshReviewStatus();
     }
 
@@ -837,12 +864,13 @@ public partial class MainWindow : Window
     {
         if (_selectedReviewCell is null)
         {
-            StatusText.Text = "Stage 7: виберіть клітинку.";
+            StatusText.Text = "Stage 8: виберіть клітинку.";
             return;
         }
 
         _selectedReviewCell.ResetToRecognition();
         StructuredTableGrid.Items.Refresh();
+        SaveSelectedPageState();
         RefreshReviewStatus();
     }
 
@@ -875,13 +903,13 @@ public partial class MainWindow : Window
         if (_selectedReviewCell is not null)
         {
             StatusText.Text =
-                $"Stage 7: {_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}% · " +
+                $"Stage 8: {_selectedReviewCell.StateText} · confidence {_selectedReviewCell.Confidence:0.#}% · " +
                 $"документ: {documentState}";
             return;
         }
 
         StatusText.Text =
-            $"Stage 7: документ {documentState} · " +
+            $"Stage 8: документ {documentState} · " +
             $"підтверджено {summary.ConfirmedCells}/{summary.TotalCells} · " +
             $"помилок {summary.ErrorCells}.";
     }
@@ -894,6 +922,139 @@ public partial class MainWindow : Window
         ReviewSessionState.Error => "є помилки",
         _ => state.ToString()
     };
+
+    private bool RestorePersistedState(DocumentPage page)
+    {
+        try
+        {
+            var restored = _persistence.Restore(page);
+            if (restored is null)
+            {
+                return false;
+            }
+
+            ApplyPersistedRotation(page, restored.RotationDegrees);
+
+            if (!string.IsNullOrEmpty(restored.OcrText))
+            {
+                _ocrTextByPage[page.Id] = restored.OcrText;
+            }
+
+            if (restored.ReviewSession is not null)
+            {
+                _reviewSessions[page.Id] = restored.ReviewSession;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text =
+                $"Stage 8: не вдалося відновити збережений стан: {ex.Message}";
+            return false;
+        }
+    }
+
+    private static void ApplyPersistedRotation(
+        DocumentPage page,
+        int rotationDegrees)
+    {
+        var normalized =
+            ((rotationDegrees % 360) + 360) % 360;
+
+        for (var i = 0;
+             i < 4 && page.RotationDegrees != normalized;
+             i++)
+        {
+            page.RotateClockwise();
+        }
+    }
+
+    private void SaveSelectedPageState()
+    {
+        if (GetSelectedPage() is { } page)
+        {
+            SavePageState(page);
+        }
+    }
+
+    private void SavePageState(DocumentPage page)
+    {
+        try
+        {
+            _ocrTextByPage.TryGetValue(page.Id, out var text);
+            _reviewSessions.TryGetValue(page.Id, out var session);
+
+            _persistence.Save(
+                page,
+                text,
+                session);
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text =
+                $"Stage 8: не вдалося автозберегти: {ex.Message}";
+        }
+    }
+
+    private void RememberSelectedCorrection()
+    {
+        if (_selectedReviewCell is null)
+        {
+            return;
+        }
+
+        RememberCorrection(
+            _selectedReviewCell.SourceText,
+            _selectedReviewCell.Text);
+    }
+
+    private void RememberSessionCorrections(
+        ReviewTableSession session)
+    {
+        foreach (var cell in session.Rows
+                     .Where(row => row.Index != session.HeaderRowIndex)
+                     .SelectMany(row => row.Cells))
+        {
+            RememberCorrection(
+                cell.SourceText,
+                cell.CurrentText);
+        }
+    }
+
+    private void RememberCorrection(
+        string sourceText,
+        string currentText)
+    {
+        var normalized = CorrectionNormalizer.NormalizeComparable(
+            sourceText,
+            CorrectionFieldKind.Nomenclature);
+
+        var canonical = (currentText ?? string.Empty).Trim();
+
+        if (normalized.Length == 0 ||
+            canonical.Length == 0 ||
+            string.Equals(
+                sourceText?.Trim(),
+                canonical,
+                StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            _persistence.RememberCorrection(
+                normalized,
+                canonical,
+                CorrectionFieldKind.Nomenclature.ToString());
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text =
+                $"Stage 8: correction memory не збережено: {ex.Message}";
+        }
+    }
 
     private DocumentPage? GetSelectedPage() => InputFilesList.SelectedItem as DocumentPage;
 
@@ -963,12 +1124,12 @@ public partial class MainWindow : Window
         if (TesseractRuntimeLocator.IsRuntimeAvailable(AppContext.BaseDirectory))
         {
             StatusText.Text =
-                $"Stage 7: OCR runtime готовий · мов {installed.Count}";
+                $"Stage 8: OCR runtime готовий · мов {installed.Count}";
         }
         else
         {
             StatusText.Text =
-                "Stage 7: OCR runtime буде доступний у portable-збірці.";
+                "Stage 8: OCR runtime буде доступний у portable-збірці.";
         }
     }
 

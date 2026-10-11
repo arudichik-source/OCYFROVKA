@@ -50,34 +50,45 @@
 - [x] Regression tests and portable build verification.
 
 ## Stage 7 — Dictionaries and SmartCorrector
-- [x] Local JSON dictionary model and loader.
-- [x] Runtime creation of private `Data/Dictionaries/nomenclature.json`.
-- [x] User import of JSON dictionary through UI.
-- [x] Indexed exact alias lookup for large catalogs.
-- [x] Text/name normalization.
-- [x] Cyrillic/Latin visual-lookalike normalization for nomenclature.
-- [x] Numeric lookalike correction only in explicit numeric context.
-- [x] Levenshtein + token similarity.
-- [x] Important numeric-token mismatch penalty.
-- [x] Exact unambiguous alias may auto-correct.
-- [x] Fuzzy matches become suggestions only.
-- [x] Equal/ambiguous candidates are never chosen automatically.
-- [x] Protected user/confirmed cells are never overwritten.
-- [x] SmartCorrector integrated with Stage 6 review.
+- [x] Local JSON dictionary model/loader/import.
+- [x] Indexed exact alias lookup.
+- [x] Cyrillic/Latin visual-lookalike normalization.
+- [x] Numeric correction only in explicit numeric context.
+- [x] Levenshtein/token fuzzy matching.
+- [x] Exact unambiguous aliases may auto-correct.
+- [x] Fuzzy/ambiguous matches require review.
+- [x] Protected user/confirmed values are never overwritten.
 - [x] Regression tests and portable build verification.
 
 ## Stage 8 — SQLite persistence and correction memory
-- [ ] Portable SQLite database initialization.
-- [ ] Persist document/page/review state.
-- [ ] Persist confirmed/manual cell values.
-- [ ] Correction-memory table.
-- [ ] Restore unfinished review after restart.
-- [ ] Autosave and schema migration foundation.
-- [ ] Regression tests.
+- [x] Portable SQLite database under `Data/digitizer.db`.
+- [x] Secure `Microsoft.Data.Sqlite 10.0.12` dependency.
+- [x] Schema/version foundation via `PRAGMA user_version`.
+- [x] SQLite integrity self-check.
+- [x] Transactional document/page/review-cell persistence.
+- [x] Persist OCR text and source provenance.
+- [x] Persist manual/confirmed/suggested/error cell states.
+- [x] Stable document/page IDs for unchanged source files.
+- [x] Restore unfinished review after application restart/re-import.
+- [x] Autosave after OCR, table editing and review actions.
+- [x] Correction-memory table with hit counts.
+- [x] Correction memory reused as suggestions only.
+- [x] Equal-frequency memory candidates remain ambiguous.
+- [x] Regression tests for SQLite round-trip, stable identity and correction memory.
+- [x] Stage 8 portable build verification.
 
-## Stage 9+
-- [ ] XLSX export.
-- [ ] Queue/background processing.
+## Stage 9 — XLSX export
+- [ ] Export reviewed structured table to XLSX.
+- [ ] Preserve Unicode text.
+- [ ] Emit actual numeric cells when safely parseable.
+- [ ] Keep textual identifiers as text.
+- [ ] Wrap text and reasonable column widths.
+- [ ] Export review/provenance metadata optionally.
+- [ ] CSV/TXT secondary export foundation.
+- [ ] Regression tests and portable build verification.
+
+## Stage 10+
+- [ ] Queue/background document processing.
 - [ ] Optional interactive four-corner editor.
 - [ ] Regression dataset and production check.
 - [ ] Portable RC.

@@ -17,6 +17,8 @@ internal sealed class ReviewGridCellViewModel : INotifyPropertyChanged
 
     public int ColumnIndex => _cell.Key.ColumnIndex;
 
+    public string SourceText => _cell.SourceText;
+
     public double Confidence => _cell.Confidence;
 
     public bool IsLowConfidence =>

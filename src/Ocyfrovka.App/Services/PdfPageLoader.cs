@@ -66,12 +66,15 @@ public static class PdfPageLoader
                 await pdfPage.RenderToStreamAsync(renderStream, options);
                 await SaveRandomAccessStreamAsync(renderStream, renderedPath, cancellationToken);
 
+                var frameIndex = checked((int)index);
+
                 pages.Add(new DocumentPage(
                     sourcePath: path,
-                    sourceFrameIndex: checked((int)index),
+                    sourceFrameIndex: frameIndex,
                     pixelWidth: checked((int)width),
                     pixelHeight: checked((int)height),
-                    renderedImagePath: renderedPath));
+                    renderedImagePath: renderedPath,
+                    id: SourcePageIdentity.CreatePageId(path, frameIndex)));
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

@@ -1,5 +1,6 @@
 using System.IO;
 using Ocyfrovka.Dictionary;
+using Ocyfrovka.Persistence;
 using System.Text.Json;
 
 namespace Ocyfrovka.App.Services;
@@ -35,6 +36,10 @@ internal static class WorkspaceInitializer
             "nomenclature.json");
 
         DictionaryLoader.EnsureEmptyDictionary(dictionaryPath);
+
+        var database = new OcyfrovkaDatabase(
+            OcyfrovkaDatabase.GetDefaultPath(root));
+        database.Initialize();
 
         var settingsPath = Path.Combine(root, "Config", "settings.json");
         if (!File.Exists(settingsPath))
