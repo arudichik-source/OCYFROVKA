@@ -97,9 +97,9 @@
 - [x] Progress counter and error/status list in scrollable navigation pane.
 - [x] Per-page OCR/review persistence through existing SQLite integration.
 - [x] Synthetic unit tests for FIFO, retry, cancellation and reentrancy.
-- [ ] Windows CI confirmation for Stage 10.
-- [ ] Optional durable queue job-state recovery across restarts.
-- [ ] Expanded end-to-end OCR queue tests on non-sensitive fixtures.
+- [x] Windows CI confirmation for Stage 10 (133/133 tests and portable publish).
+- [ ] Optional durable queue job-state recovery across restarts (deferred).
+- [ ] Expanded end-to-end OCR queue tests on non-sensitive fixtures (acceptance hardening).
 
 ## Stage 11+
 - [ ] Optional interactive four-corner editor.
