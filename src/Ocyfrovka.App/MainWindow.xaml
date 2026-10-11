@@ -36,7 +36,7 @@
                 <StackPanel Margin="12,18">
                     <TextBlock Text="РОЗДІЛИ" Margin="8,0,8,10" FontSize="11" Foreground="{StaticResource MutedTextBrush}"/>
                     <Button Content="Нове оцифрування" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
-                    <Button Content="Черга" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
+                    <Button Content="Черга" Click="ShowQueue_Click" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Перевірка" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Готові" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Історія" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
@@ -58,6 +58,24 @@
                     <TextBlock x:Name="QueueStatusText" Text="Черга не запущена."
                                TextWrapping="Wrap" Margin="8,12,8,0"
                                FontSize="11" Foreground="{StaticResource MutedTextBrush}"/>
+                    <ListBox x:Name="QueueItemsList" MaxHeight="145" Margin="2,8,2,0"
+                             Background="#151820" Foreground="{StaticResource TextBrush}"
+                             BorderBrush="#343A46" BorderThickness="1">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="4,3">
+                                    <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock FontSize="10" Foreground="{StaticResource MutedTextBrush}">
+                                        <Run Text="{Binding Status}"/>
+                                        <Run Text=" · спроб: "/>
+                                        <Run Text="{Binding Attempts}"/>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding Error}" FontSize="10" Foreground="#DBA2A2"
+                                               TextWrapping="Wrap" MaxHeight="35"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </StackPanel>
             </Border>
 
