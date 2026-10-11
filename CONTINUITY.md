@@ -5,7 +5,7 @@
 **Active branch:** `stage/10-processing-queue`
 **Last merged PR:** #9 — XLSX, CSV and TXT export
 **Green Stage 9 main merge:** `aa451cda447e833860f235bb0629c80949179359`
-**Latest Stage 10 functional checkpoint before handoff:** `6d0f7b92adb6907e2b3e41853591959848b8e8e9`
+**Latest verified Stage 10 code:** `2ebf1d8d1c83d028bc97a0bf32b8c539d9d9b362`
 
 ## Start here when reconnecting
 
@@ -40,17 +40,24 @@ Merged into `main`. Stage 9 includes local XLSX/CSV/TXT, conservative numeric ty
 - Guard against removal/clear/rotation/import during active batch; stale queue is reset after removal/clear.
 - User-facing left-side `Черга` link now focuses queue list.
 
-## Last known CI
+## Latest verified CI
 
-Stage 10 is still **under verification**, NOT yet merged. Check the latest `stage/10-processing-queue` push workflow and its logs. The most recently inspected workflow was `38132584117` but may be superseded after this document update.
+- Run: `38132632200`, head SHA `2ebf1d8d1c83d028bc97a0bf32b8c539d9d9b362`
+- Result: **SUCCESS**, Core/Queue **119/119 PASS**, Windows **14/14 PASS**, total **133/133 PASS**.
+- Tesseract smoke test: **v5.5.3.20260724**.
+- Portable Windows x64 publish and artifact upload: **SUCCESS**.
+- Artifact: `OCYFROVKA_Portable_x64`, ID `11699353228`, size `170920393` bytes.
+- Artifact SHA256: `db318bd7a5ab4aaeb89502347ce115b564846808e631047b75642454e3560253`.
+- URL: https://github.com/arudichik-source/OCYFROVKA/actions/runs/38132632200
+- This green run covers all functional changes; subsequent documentation-only commits need their final check before merge.
 
 ## Immediate remaining tasks
 
-1. Check Stage 10 CI; fix any compile/test errors and confirm Tesseract/runtime/portable publish.
-2. Add integration tests exercising queue progress and selected-page review protection.
-3. Consider better cancellation/retry UX and safe queue recovery.
-4. Mark Stage 10 complete only after green CI, then PR #10, green PR checks and merge.
-5. Following Stage 10: manual perspective editor, non-sensitive OCR fixture-based regression, production check / portable RC.
+1. Open PR #10 and confirm final PR run is green before merging.
+2. Verify post-merge main.
+3. Start Stage 11 acceptance hardening with synthetic/non-sensitive OCR fixtures and end-to-end batch testing.
+4. Consider durable queue recovery and advanced cancellation UX as later refinements.
+5. Continue with manual perspective editor and portable release candidate only after verified acceptance checks.
 
 ## Data safety
 
