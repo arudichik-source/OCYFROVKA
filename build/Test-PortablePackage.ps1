@@ -58,8 +58,8 @@ try {
     # path contains Unicode characters and spaces.
     & (Join-Path $PSScriptRoot 'Smoke-Test-Local-Ocr.ps1') -ApplicationDirectory $temp
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Extracted portable OCR acceptance exited with $LASTEXITCODE"
+    if (-not $?) {
+        throw "Extracted portable OCR acceptance did not succeed."
     }
 
     Write-Host 'PASS: extracted portable ZIP is self-contained and works from a Unicode path.'
