@@ -21,7 +21,7 @@ public static partial class ExportValueParser
 
         var unsigned = text.TrimStart('+', '-');
         var integerPart = unsigned
-            .Split('.', ',', 2)[0];
+            .Split(['.', ','], 2)[0];
 
         if (integerPart.Length > 1 &&
             integerPart.StartsWith('0'))
@@ -52,6 +52,6 @@ public static partial class ExportValueParser
         return ExportValue.FromNumber(text, number);
     }
 
-    [GeneratedRegex(@"^[+-]?(?:0|[1-9]d*)(?:[.,]d+)?$")]
+    [GeneratedRegex(@"^[+-]?(?:0|[1-9]\d*)(?:[.,]\d+)?$")]
     private static partial Regex StrictNumberRegex();
 }
