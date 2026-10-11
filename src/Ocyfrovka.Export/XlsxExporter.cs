@@ -83,7 +83,6 @@ public static class XlsxExporter
         {
             var cell = sheet.Cell(1, column + 1);
             cell.Value = table.Headers[column];
-            cell.DataType = XLDataType.Text;
         }
 
         for (var rowIndex = 0;
@@ -210,7 +209,6 @@ public static class XlsxExporter
         {
             var cell = sheet.Cell(1, column + 1);
             cell.Value = headers[column];
-            cell.DataType = XLDataType.Text;
         }
 
         var rowNumber = 2;
@@ -314,7 +312,6 @@ public static class XlsxExporter
         string value)
     {
         cell.Value = value ?? string.Empty;
-        cell.DataType = XLDataType.Text;
     }
 
     private static string SanitizeSheetName(
