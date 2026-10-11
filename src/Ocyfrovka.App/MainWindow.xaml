@@ -209,6 +209,7 @@
                                           SelectionUnit="Cell"
                                           SelectionMode="Single"
                                           SelectedCellsChanged="StructuredTableGrid_SelectedCellsChanged"
+                                          CellEditEnding="StructuredTableGrid_CellEditEnding"
                                           HeadersVisibility="Column"
                                           GridLinesVisibility="All"
                                           Background="#151820"
@@ -230,7 +231,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="StatusText" Text="Stage 6: перевірка OCR" VerticalAlignment="Center"
+                <TextBlock x:Name="StatusText" Text="Stage 8: локальне автозбереження" VerticalAlignment="Center"
                            Foreground="{StaticResource MutedTextBrush}"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
                     <TextBlock Text="Мова OCR:" VerticalAlignment="Center" Margin="0,0,7,0"/>
