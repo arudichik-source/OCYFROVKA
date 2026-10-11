@@ -24,5 +24,6 @@
     <ProjectReference Include="..\..\src\Ocyfrovka.Dictionary\Ocyfrovka.Dictionary.csproj" />
     <ProjectReference Include="..\..\src\Ocyfrovka.Persistence\Ocyfrovka.Persistence.csproj" />
     <ProjectReference Include="..\..\src\Ocyfrovka.Export\Ocyfrovka.Export.csproj" />
+    <ProjectReference Include="..\..\src\Ocyfrovka.Queue\Ocyfrovka.Queue.csproj" />
   </ItemGroup>
 </Project>
