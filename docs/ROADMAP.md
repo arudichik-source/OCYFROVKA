@@ -104,7 +104,7 @@
 ## Stage 11 — Acceptance and production hardening
 - [x] Add synthetic offline English/Ukrainian image generator for CI.
 - [x] Gate portable publish on actual Tesseract recognition (not just --version).
-- [ ] Verify new acceptance check is green on Windows runner.
+- [x] Verify bilingual text + TSV word geometry/confidence acceptance is green on Windows runner (133/133 tests).
 - [ ] Add deterministic non-sensitive regression fixtures for page/table reconstruction.
 - [ ] Add batch OCR end-to-end acceptance and protected review regression.
 - [ ] Optional interactive four-corner editor.
