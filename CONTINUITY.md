@@ -2,63 +2,57 @@
 
 **Updated:** 2026-10-11
 **Repository:** `arudichik-source/OCYFROVKA`
-**Active branch:** `stage/10-processing-queue`
-**Last merged PR:** #9 — XLSX, CSV and TXT export
-**Green Stage 9 main merge:** `aa451cda447e833860f235bb0629c80949179359`
-**Latest verified Stage 10 code:** `2ebf1d8d1c83d028bc97a0bf32b8c539d9d9b362`
+**Active branch:** `stage/11-acceptance-tests`
+**Last merged PR:** #10 — cancellable batch OCR queue
+**Green main Stage 10 merge:** `ab201a0be6c820cead2919c7b92fc7751edf26a8`
 
-## Start here when reconnecting
+## Resume instructions
 
-1. Inspect GitHub branches, latest Stage 10 SHA, open PRs and GitHub Actions.
-2. Do not assume Stage 10 CI is green until latest code's runner finishes.
-3. Fix compiler/test failures before declaring completion or merging.
-4. Continue working on Stage 10 from `stage/10-processing-queue`, not old stage branches.
-5. Keep this file updated at major verified checkpoints.
+Always read this file, then query live GitHub for current branch/PR status and latest workflow. Do not redo stages already merged. Stage 11 is **in progress**, and must not be described as completed until actual OCR smoke test and full Windows portable build pass.
 
 ## Product invariants
 
-- Windows x64, .NET 10/WPF portable self-contained folder ZIP, no admin rights or installer.
-- Offline OCR via pinned local multilingual Tesseract (Ukrainian, English, Russian, Polish, German + OSD; extensible).
-- Original document images/PDFs never overwritten.
-- Source OCR word geometry/confidence preserved after review/correction.
-- Confirmed user values cannot be silently overwritten by OCR or dictionary.
-- Only explicit review allows uncertain fuzzy/memory suggestions to affect data.
-- Runtime documents, private dictionaries, SQLite DB, Workspace, Export and Logs are not committed publicly.
+- Standalone Windows x64 .NET 10/WPF self-contained portable ZIP; no installation/admin required.
+- All OCR offline; pinned Tesseract runtime and multilingual data.
+- Original scan remains unchanged.
+- User/confirmed review values protected from any re-recognition or automatic fuzzy changes.
+- OCR provenance and confidence remain available.
+- Runtime documents, databases, private dictionaries and logs are not stored in the public repository.
 
-## Stage 1–9 status
+## Merged stages 1–10
 
-Merged into `main`. Stage 9 includes local XLSX/CSV/TXT, conservative numeric typing and text identifier protection, optional OCR metadata and WPF export UI. Last Stage 9 PR-check run `38132021279` was SUCCESS; 112 Core + 14 Windows = **126/126 PASS**. Post-merge `main` run `38132164990` was SUCCESS.
+1–8: document input and PDF, preprocessing/perspective foundation, multilingual offline OCR, layout reconstruction, protected review, local dictionaries/SmartCorrector, SQLite autosave and correction memory.
 
-## Stage 10 code added
+9: XLSX/CSV/TXT export of reviewed tables, conservative numeric typing, optional OCR metadata.
 
-- `src/Ocyfrovka.Queue`: generic `ProcessingQueue<T>` with FIFO execution, bounded parallelism = 1, cancellation, max attempt count, reentrancy guard, per-item status/error/attempt count, retry-failed.
-- `QueueJobStatus`: Queued, Running, Completed, Failed, Canceled.
-- `QueueJobSnapshot` and `QueueProgress` immutable reporting models.
-- `tests/Ocyfrovka.Core.Tests/ProcessingQueueTests.cs`: 7 synthetic scenarios (FIFO, isolation, retry, manual retry, cancel, reentrancy and empty queue).
-- WPF `MainWindow`: batch OCR across captured document pages, cancel current subprocess, retry failed pages, progress/status indicators, scrollable queue listing; single-page OCR preserved.
-- OCR progress retains local SQLite per-page persistence and protected existing review edits.
-- Guard against removal/clear/rotation/import during active batch; stale queue is reset after removal/clear.
-- User-facing left-side `Черга` link now focuses queue list.
+10: `Ocyfrovka.Queue` with sequential FIFO batch OCR, cancellation/retries/error isolation, WPF controls/status list and SQLite persistence integration.
 
-## Latest verified CI
+Latest Stage 10 functional CI: run `38132632200`, **119/119 Core + 14/14 Windows = 133/133 PASS**; portable x64 ZIP uploaded. Stage 10 PR #10 was merged, and post-merge main run `38132926440` completed SUCCESS.
 
-- Run: `38132632200`, head SHA `2ebf1d8d1c83d028bc97a0bf32b8c539d9d9b362`
-- Result: **SUCCESS**, Core/Queue **119/119 PASS**, Windows **14/14 PASS**, total **133/133 PASS**.
-- Tesseract smoke test: **v5.5.3.20260724**.
-- Portable Windows x64 publish and artifact upload: **SUCCESS**.
-- Artifact: `OCYFROVKA_Portable_x64`, ID `11699353228`, size `170920393` bytes.
-- Artifact SHA256: `db318bd7a5ab4aaeb89502347ce115b564846808e631047b75642454e3560253`.
-- URL: https://github.com/arudichik-source/OCYFROVKA/actions/runs/38132632200
-- This green run covers all functional changes; subsequent documentation-only commits need their final check before merge.
+## Stage 11 work in branch
 
-## Immediate remaining tasks
+- Added `build/Smoke-Test-Local-Ocr.ps1`: uses Windows System.Drawing to generate disposable synthetic images. No private files or network upload.
+- Generates `INVOICE 12345` and `ТЕСТ 67890` fixture images.
+- Runs **bundled portable** `tesseract.exe` against English and Ukrainian samples; requires expected digit strings and zero exit code.
+- Updated `.github/workflows/build-windows.yml` to run acceptance script after the bundled OCR runtime is packaged and **before** the portable ZIP is built.
+- Earlier Stage 4 smoke tested only `--version`/`--list-langs`. This stage checks real recognizer execution.
 
-1. Open PR #10 and confirm final PR run is green before merging.
-2. Verify post-merge main.
-3. Start Stage 11 acceptance hardening with synthetic/non-sensitive OCR fixtures and end-to-end batch testing.
-4. Consider durable queue recovery and advanced cancellation UX as later refinements.
-5. Continue with manual perspective editor and portable release candidate only after verified acceptance checks.
+## Current CI / next steps
 
-## Data safety
+Latest known Stage 11 workflow: `38133022416` (possibly superseded after this handoff commit). Read latest job logs.
 
-Do not commit original documents, confidential images, private dictionaries, DB, Workspace/Export/Logs, or credentials.
+1. Fix System.Drawing/Tesseract or OCR recognition fixture issues surfaced by CI.
+2. Keep script deterministic and independent of private documents.
+3. Add follow-up test coverage for real pipeline and batch queue as feasible.
+4. Only once Stage 11 checks are green, update roadmap, open PR #11, merge after green PR check and verify main.
+5. Prepare portable release/production-check workflow after Stage 11 acceptance baseline.
+
+## Project links
+
+- Repository: https://github.com/arudichik-source/OCYFROVKA
+- Roadmap: `docs/ROADMAP.md`
+- Stage 10 merged PR: https://github.com/arudichik-source/OCYFROVKA/pull/10
+
+## Safety
+
+No real personal/private documents, credentials, SQLite databases or OCR user files may be committed to the public repository.
