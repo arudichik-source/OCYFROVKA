@@ -33,6 +33,7 @@
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="#2A2F3A" BorderThickness="0,0,1,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="12,18">
                     <TextBlock Text="РОЗДІЛИ" Margin="8,0,8,10" FontSize="11" Foreground="{StaticResource MutedTextBrush}"/>
                     <Button Content="Нове оцифрування" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
@@ -77,6 +78,7 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </StackPanel>
+                </ScrollViewer>
             </Border>
 
             <Grid Grid.Column="1" Margin="18">
