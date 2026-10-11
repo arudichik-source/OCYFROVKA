@@ -115,5 +115,6 @@
 - [x] Verify EXE, native .NET hosting components, Tesseract and all bundled language models.
 - [x] Reject private user runtime data in the ZIP.
 - [x] Re-run real bilingual OCR and TSV checks from the extracted ZIP.
-- [ ] Confirm Stage 12 Windows CI and PR are green.
+- [x] Confirm Stage 12 functional CI is green (133/133 tests; extracted ZIP OCR and TSV pass).
+- [ ] Final PR #12 CI/merge and post-merge main verification.
 - [ ] Verify WPF desktop start manually on a Windows user machine without admin rights.
