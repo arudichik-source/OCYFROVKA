@@ -78,17 +78,25 @@
 - [x] Stage 8 portable build verification.
 
 ## Stage 9 — XLSX export
-- [ ] Export reviewed structured table to XLSX.
-- [ ] Preserve Unicode text.
-- [ ] Emit actual numeric cells when safely parseable.
-- [ ] Keep textual identifiers as text.
-- [ ] Wrap text and reasonable column widths.
-- [ ] Export review/provenance metadata optionally.
-- [ ] CSV/TXT secondary export foundation.
-- [ ] Regression tests and portable build verification.
+- [x] Export reviewed structured table to XLSX.
+- [x] Preserve Unicode text.
+- [x] Emit actual numeric cells only in safely recognized numeric columns.
+- [x] Keep identifiers, codes, leading-zero values and formula-looking text as text.
+- [x] Wrap text, freeze headers, use filters and bounded column widths.
+- [x] Optional review/OCR metadata worksheet (off by default).
+- [x] CSV and tab-delimited TXT secondary formats.
+- [x] In-app export controls and regression tests.
+- [x] Windows portable build verification (126/126 tests).
 
-## Stage 10+
-- [ ] Queue/background document processing.
+## Stage 10 — Queue and background processing
+- [ ] Deterministic document/page processing queue.
+- [ ] Cancellation and bounded concurrency.
+- [ ] Progress and per-item status, retry for failed jobs.
+- [ ] UI integration without blocking WPF thread.
+- [ ] Durable queue recovery where needed.
+- [ ] Synthetic regression tests.
+
+## Stage 11+
 - [ ] Optional interactive four-corner editor.
-- [ ] Regression dataset and production check.
+- [ ] Regression dataset and end-to-end production check.
 - [ ] Portable RC.
