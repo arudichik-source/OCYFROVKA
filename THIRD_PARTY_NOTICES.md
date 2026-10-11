@@ -30,3 +30,10 @@ Every packaged model is SHA256-verified during the build.
 The application wrapper, document workflow, preprocessing orchestration, layout/table reconstruction, validation, correction memory and export logic remain separate OCYFROVKA code.
 
 Do not add real user documents, local databases, private dictionaries, tokens or credentials to the public repository.
+
+## ClosedXML
+
+- Version packaged by OCYFROVKA: `0.105.1`
+- Purpose: local creation of XLSX workbooks without Microsoft Excel/COM.
+- License: MIT.
+- Export logic remains OCYFROVKA code; ClosedXML is used only as the Open XML workbook writer.
