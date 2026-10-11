@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="ОЦИФРОВКА" Height="840" Width="1320" MinHeight="700" MinWidth="1080"
         Background="{StaticResource BgBrush}" Foreground="{StaticResource TextBrush}"
-        AllowDrop="True" Drop="Window_Drop" Loaded="Window_Loaded">
+        AllowDrop="True" Drop="Window_Drop" Loaded="Window_Loaded" Closed="Window_Closed">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="64"/>
@@ -43,6 +43,21 @@
                     <Button Content="Довідники" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Шаблони" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
                     <Button Content="Налаштування" Margin="0,2" Padding="12,9" HorizontalContentAlignment="Left"/>
+                    <Separator Margin="4,14,4,10"/>
+                    <TextBlock Text="ПАКЕТНИЙ OCR" FontSize="11" Margin="8,0,8,8"
+                               Foreground="{StaticResource MutedTextBrush}"/>
+                    <Button x:Name="QueueAllButton" Content="Оцифрувати всі сторінки"
+                            Click="QueueAll_Click" Padding="8,8" Margin="0,2"
+                            HorizontalContentAlignment="Left"/>
+                    <Button x:Name="CancelQueueButton" Content="Скасувати чергу"
+                            Click="CancelQueue_Click" Padding="8,8" Margin="0,2"
+                            IsEnabled="False" HorizontalContentAlignment="Left"/>
+                    <Button x:Name="RetryQueueButton" Content="Повторити помилки"
+                            Click="RetryQueue_Click" Padding="8,8" Margin="0,2"
+                            HorizontalContentAlignment="Left"/>
+                    <TextBlock x:Name="QueueStatusText" Text="Черга не запущена."
+                               TextWrapping="Wrap" Margin="8,12,8,0"
+                               FontSize="11" Foreground="{StaticResource MutedTextBrush}"/>
                 </StackPanel>
             </Border>
 
