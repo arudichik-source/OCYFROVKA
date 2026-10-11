@@ -72,6 +72,30 @@ public sealed class OcyfrovkaDatabase
         }
     }
 
+    public DatabaseHealthReport CheckHealth()
+    {
+        Initialize();
+
+        using var connection = OpenConnection();
+        var version = ReadSchemaVersion(connection);
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "PRAGMA integrity_check;";
+        var integrity = Convert.ToString(
+            command.ExecuteScalar(),
+            CultureInfo.InvariantCulture) ?? string.Empty;
+
+        return new DatabaseHealthReport(
+            string.Equals(
+                integrity,
+                "ok",
+                StringComparison.OrdinalIgnoreCase) &&
+            version <= CurrentSchemaVersion,
+            version,
+            integrity,
+            _databasePath);
+    }
+
     public void SavePageReview(PersistedPageReview page)
     {
         ArgumentNullException.ThrowIfNull(page);
