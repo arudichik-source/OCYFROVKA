@@ -35,7 +35,8 @@ internal static class ImagePageLoader
                 sourcePath: path,
                 sourceFrameIndex: index,
                 pixelWidth: frame.PixelWidth,
-                pixelHeight: frame.PixelHeight))
+                pixelHeight: frame.PixelHeight,
+                id: SourcePageIdentity.CreatePageId(path, index)))
             .ToArray();
     }
 }
