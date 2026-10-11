@@ -231,7 +231,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="StatusText" Text="Stage 8: локальне автозбереження" VerticalAlignment="Center"
+                <TextBlock x:Name="StatusText" Text="Stage 9: локальний експорт" VerticalAlignment="Center"
                            Foreground="{StaticResource MutedTextBrush}"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
                     <TextBlock Text="Мова OCR:" VerticalAlignment="Center" Margin="0,0,7,0"/>
@@ -241,8 +241,14 @@
                               MinHeight="30"/>
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Content="Очистити" Click="Clear_Click" Padding="16,8" Margin="4,0"/>
-                    <Button x:Name="DigitizeButton" Content="Оцифрувати" Click="Digitize_Click" Padding="18,8" Margin="4,0"/>
+                    <CheckBox x:Name="IncludeMetadataCheckBox"
+                              Content="OCR-метадані"
+                              ToolTip="Додати окремий аркуш із джерелами OCR, confidence та станами перевірки (лише XLSX)"
+                              VerticalAlignment="Center"
+                              Margin="5,0"/>
+                    <Button Content="Експорт" Click="Export_Click" Padding="14,8" Margin="4,0"/>
+                    <Button Content="Очистити" Click="Clear_Click" Padding="14,8" Margin="4,0"/>
+                    <Button x:Name="DigitizeButton" Content="Оцифрувати" Click="Digitize_Click" Padding="14,8" Margin="4,0"/>
                 </StackPanel>
             </Grid>
         </Border>

@@ -1,122 +1,67 @@
 # CONTINUITY / HANDOFF
 
-**Updated:** 2026-10-11  
-**Repository:** `arudichik-source/OCYFROVKA`  
-**Active branch:** `stage/08-persistence`  
-**Latest merged PR:** #7 — local dictionaries and conservative SmartCorrector  
-**Green main commit after Stage 7:** `d4a3347177edcc18c8f3ce2377905cb968cb29a2`  
-**Latest verified Stage 8 functional commit:** `7f83b3d6657b7c9f839fb28ed6c0dab2a2b4c2ad`
+**Updated:** 2026-10-11
+**Repository:** `arudichik-source/OCYFROVKA`
+**Current working branch:** `stage/09-xlsx-export`
+**Last merged PR:** #8 — Stage 8 SQLite persistence
+**Stage 9 verified code commit:** `e92b19c0775fe17087bfdf8b676f11d5a732c48d`
 
-## Fixed decisions
+## Read first in next conversation
 
-- Windows x64, C# / WPF / .NET 10, portable self-contained ZIP.
-- Base workflow is fully local/offline.
-- Original source documents are immutable.
-- OCR source text/coordinates/confidence remain provenance after corrections.
-- User/confirmed values cannot be silently overwritten.
-- Fuzzy/correction-memory matches are suggestions, not silent changes.
-- Runtime databases and private dictionaries stay outside Git.
+Inspect the current main/branch/PR state via GitHub before making changes. This file documents the verified Stage 9 state **before merging PR #9**; GitHub is authoritative if later work has already moved ahead. Do not recreate completed work.
 
-## Completed through Stage 7
+## Product constraints
 
-Stages 1–7 are merged into `main` and green.
+- Windows x64 WPF/.NET 10, portable self-contained ZIP (no admin/installer).
+- Base operation fully local/offline, multilingual OCR with pinned/hash-verified Tesseract runtime and languages.
+- Original documents immutable; no uploading sensitive inputs or private dictionaries.
+- OCR words/coordinates/confidence remain provenance.
+- Confirmed/user-edited values must never be silently replaced.
+- Fuzzy matches and correction memory yield suggestions, never forced changes.
+- Runtime database, documents, dictionaries, Workspace, Export and Logs are ignored by Git.
 
-## Stage 8 — implemented
+## Completed stages
 
-New `Ocyfrovka.Persistence` module:
+Stages 1–8 merged into main. Stage 9 is implemented on `stage/09-xlsx-export`:
 
-- `Microsoft.Data.Sqlite 10.0.12`;
-- database path: `Data/digitizer.db`;
-- connection pooling disabled for predictable portable DB file lifecycle;
-- schema version: `PRAGMA user_version = 1`;
-- `PRAGMA foreign_keys = ON`;
-- `PRAGMA busy_timeout = 5000`;
-- `PRAGMA integrity_check` health report;
-- tables:
-  - `Documents`;
-  - `Pages`;
-  - `ReviewCells`;
-  - `CorrectionMemory`;
-- transactional page/review-cell save;
-- OCR text persisted per page;
-- review cells persist source/current/suggested text, confidence, bounds, source words and review state;
-- correction memory stores normalized input, field kind, canonical value, hit count and last-use time.
+- New `src/Ocyfrovka.Export` module using ClosedXML for XLSX.
+- `ReviewExportProjection` exports current reviewed values; by default refuses export until review state is `Reviewed`.
+- XLSX with UTF-8/Unicode values, header styling, wrap text, filters, freeze top row, bounded widths.
+- Header-based **conservative** numeric classification. Quantities/prices/totals become actual numeric Excel cells only when safely parseable; identifiers/codes/serials, values with leading zeros and formula-like strings remain text.
+- Optional metadata worksheet includes OCR source/current value/confidence/review state/suggestion. It is opt-in only.
+- CSV semicolon-delimited and TXT tab-delimited export; UTF-8 BOM, quoting and CSV formula-injection guard.
+- WPF export controls integrated, with explicit options for format and metadata.
+- Deterministic tests cover export projection, Unicode, typing, metadata, CSV/TXT and identifiers.
 
-Review persistence:
+## Latest verified Stage 9 CI
 
-- `ReviewCellSnapshot` / `ReviewTableSnapshot`;
-- review sessions can round-trip independently from WPF;
-- protected manual/confirmed values survive restart;
-- suggested/error/recognized states survive restart;
-- source OCR provenance survives restart.
+- Workflow: `38130703561`, commit `e92b19c0775fe17087bfdf8b676f11d5a732c48d`
+- Result **SUCCESS**.
+- Core/Export tests **112/112 PASS**.
+- Windows App integration **14/14 PASS**.
+- Total **126/126 PASS**.
+- Tesseract smoke check **v5.5.3.20260724**.
+- Portable Windows x64 publish and artifact upload **SUCCESS**.
+- Artifact: `OCYFROVKA_Portable_x64`, ID `11698273247`, 170899079 bytes.
+- Artifact SHA256: `42c4cd0080d0e3095dba08cac7e0f1c4fa91fb0bca7cfab65e0ae6aadbf083aa`.
+- Run URL: https://github.com/arudichik-source/OCYFROVKA/actions/runs/38130703561
 
-Stable source identity:
+## Next development sequence (no arbitrary pause)
 
-- deterministic document/page IDs from full path + file length + modified UTC + frame/page index;
-- re-importing the same unchanged file restores the same review;
-- changed/replaced files produce new IDs so stale review does not attach to changed content.
+1. Open/check PR #9 and merge only if final PR CI is green.
+2. Verify post-merge `main` build.
+3. Create `stage/10-processing-queue` from green main.
+4. Implement deterministic queue as independent domain:
+   - queued/running/completed/failed/canceled states;
+   - bounded parallelism; cancellation tokens; retry policy;
+   - per-page progress and error diagnostics;
+   - no UI-thread blocking;
+   - tests for FIFO, cancellation, failure isolation, retries;
+   - integrate batch processing with UI only after domain is green.
+5. Update this file at each material checkpoint and preserve real source privacy.
 
-WPF integration:
+## Known deferred items
 
-- DB initialized during portable workspace startup;
-- persisted OCR/review state restored when a page is re-imported;
-- persisted rotation restored;
-- autosave after OCR, rotation, grid edit, dictionary correction and review actions;
-- per-page raw OCR/review survives application restart;
-- explicit user corrections are added to correction memory;
-- correction memory is re-applied conservatively as a `Suggested` state only;
-- equal-hit alternatives are not chosen automatically.
-
-Security/reliability fixes:
-
-- initial `Microsoft.Data.Sqlite 10.0.0` transitively emitted NU1903 for vulnerable SQLitePCLRaw;
-- updated to `Microsoft.Data.Sqlite 10.0.12`; final verified run contains no NU1903 warning;
-- SQLite connection pooling disabled to prevent portable DB file-lock retention in deterministic tests.
-
-## Latest verified CI
-
-Workflow run:
-
-- Run: `38127970292`
-- Commit: `7f83b3d6657b7c9f839fb28ed6c0dab2a2b4c2ad`
-- Result: **SUCCESS**
-- Core/OCR/Imaging/Layout/Review/Dictionary/Persistence tests: **80/80 PASS**
-- Windows integration tests: **14/14 PASS**
-- Total: **94/94 PASS**
-- Tesseract: **v5.5.3.20260724**
-- Portable Windows x64 publish: **SUCCESS**
-- Artifact upload: **SUCCESS**
-- Artifact: `OCYFROVKA_Portable_x64`
-- Artifact ID: `11696989795`
-- Artifact size: `168143422` bytes
-- Artifact SHA256: `3a915db34abdcea06be84645eafe609895a064b33677a365322e9d7c3a2519a2`
-
-## Immediate next work
-
-1. Open/check PR #8.
-2. Merge Stage 8 after final green PR check.
-3. Verify post-merge `main`.
-4. Create `stage/09-xlsx-export`.
-5. Implement export:
-   - reviewed structured table → XLSX;
-   - Unicode;
-   - safe numeric parsing to actual numeric cells;
-   - text identifiers remain text;
-   - wrap text / reasonable column widths;
-   - optional confidence/review metadata sheet;
-   - CSV/TXT secondary exports;
-   - deterministic tests.
-6. Keep export local and never include hidden OCR provenance unless explicitly selected.
-
-## Technical notes
-
-- Persistence module: `src/Ocyfrovka.Persistence`.
-- Review module: `src/Ocyfrovka.Review`.
-- Dictionary module: `src/Ocyfrovka.Dictionary`.
-- SQLite schema migration foundation starts at version 1.
-- Private DB path is ignored by Git through `/Data/`.
-- OCR runtime lock remains `build/ocr-runtime.lock.json`.
-
-## Data safety
-
-Never commit real documents, private dictionaries, runtime SQLite databases, Workspace/Export/Logs, credentials, tokens or certificates.
+- Optional manual four-corner perspective editor.
+- Representative *non-sensitive* regression fixtures and OCR acceptance quality thresholds.
+- Production check, release candidate and performance tuning on real samples.

@@ -16,5 +16,6 @@
     <ProjectReference Include="..\Ocyfrovka.Review\Ocyfrovka.Review.csproj" />
     <ProjectReference Include="..\Ocyfrovka.Dictionary\Ocyfrovka.Dictionary.csproj" />
     <ProjectReference Include="..\Ocyfrovka.Persistence\Ocyfrovka.Persistence.csproj" />
+    <ProjectReference Include="..\Ocyfrovka.Export\Ocyfrovka.Export.csproj" />
   </ItemGroup>
 </Project>
