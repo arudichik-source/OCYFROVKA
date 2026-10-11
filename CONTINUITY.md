@@ -37,15 +37,26 @@ Latest Stage 10 functional CI: run `38132632200`, **119/119 Core + 14/14 Windows
 - Updated `.github/workflows/build-windows.yml` to run acceptance script after the bundled OCR runtime is packaged and **before** the portable ZIP is built.
 - Earlier Stage 4 smoke tested only `--version`/`--list-langs`. This stage checks real recognizer execution.
 
-## Current CI / next steps
+## Verified Stage 11 acceptance baseline
 
-Latest known Stage 11 workflow: `38133022416` (possibly superseded after this handoff commit). Read latest job logs.
+- Latest green workflow run: `38133268883`.
+- Functional code SHA: `518e7b883cde01fb6d190f22e4a6a9e82b35337d`.
+- Core + Queue tests **119/119 PASS**, Windows tests **14/14 PASS** = **133/133 PASS**.
+- English synthetic OCR output: `INVOICE 12345`; TSV digit-word geometry **274×73**, confidence **96.928894**.
+- Ukrainian synthetic OCR output: `ТЕСТ 67890`; TSV digit-word geometry **276×74**, confidence **95.0196**.
+- All recognition ran completely offline using the packaged Windows Tesseract binary and supplied language models.
+- Portable x64 publish/upload **SUCCESS**.
+- Artifact: `OCYFROVKA_Portable_x64`, ID `11699479498`.
+- Uploaded SHA256: `bbd031fd03ffc8093d7436e9e138a42842b33b8e4983d7854ce43098b388da4f`.
+- Run: https://github.com/arudichik-source/OCYFROVKA/actions/runs/38133268883
 
-1. Fix System.Drawing/Tesseract or OCR recognition fixture issues surfaced by CI.
-2. Keep script deterministic and independent of private documents.
-3. Add follow-up test coverage for real pipeline and batch queue as feasible.
-4. Only once Stage 11 checks are green, update roadmap, open PR #11, merge after green PR check and verify main.
-5. Prepare portable release/production-check workflow after Stage 11 acceptance baseline.
+## Immediate next work
+
+1. Open PR #11 for green bilingual OCR/TSV acceptance baseline.
+2. Merge only after green final PR check and verify main.
+3. Continue additional acceptance hardening (synthetic table/fixture-based tests and real batch queue end-to-end behavior).
+4. Add portable production self-check and release candidate packaging.
+5. Leave manual perspective corner editor as optional later UI improvement.
 
 ## Project links
 
