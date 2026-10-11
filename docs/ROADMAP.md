@@ -109,3 +109,11 @@
 - [ ] Add batch OCR end-to-end acceptance and protected review regression.
 - [ ] Optional interactive four-corner editor.
 - [ ] Portable production check and release candidate.
+
+## Stage 12 — Portable package validation
+- [x] Extract built ZIP to a path with Unicode and spaces.
+- [x] Verify EXE, native .NET hosting components, Tesseract and all bundled language models.
+- [x] Reject private user runtime data in the ZIP.
+- [x] Re-run real bilingual OCR and TSV checks from the extracted ZIP.
+- [ ] Confirm Stage 12 Windows CI and PR are green.
+- [ ] Verify WPF desktop start manually on a Windows user machine without admin rights.
