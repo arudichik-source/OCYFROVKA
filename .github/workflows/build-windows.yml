@@ -71,6 +71,9 @@ jobs:
           & ./build/Prepare-OcrRuntime.ps1 -Destination publish/OCYFROVKA/Engine/OCR
           if ($LASTEXITCODE -ne 0) { throw "OCR runtime preparation failed with exit code $LASTEXITCODE" }
 
+          & ./build/Smoke-Test-Local-Ocr.ps1 -ApplicationDirectory publish/OCYFROVKA
+          if ($LASTEXITCODE -ne 0) { throw "Synthetic local OCR acceptance failed with exit code $LASTEXITCODE" }
+
           @'
           ОЦИФРОВКА Portable x64
 
