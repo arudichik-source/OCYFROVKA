@@ -520,7 +520,7 @@ public partial class MainWindow : Window
             _reviewSessions[pageId] = session;
         }
 
-        ApplyCorrectionMemorySuggestions(session);
+        CorrectionMemorySuggestionService.Apply(session, _persistence);
         ShowReviewSession(session);
     }
 
@@ -1053,69 +1053,6 @@ public partial class MainWindow : Window
         {
             StatusText.Text =
                 $"Stage 8: correction memory не збережено: {ex.Message}";
-        }
-    }
-
-    private void ApplyCorrectionMemorySuggestions(
-        ReviewTableSession session)
-    {
-        foreach (var cell in session.Rows
-                     .Where(row => row.Index != session.HeaderRowIndex)
-                     .SelectMany(row => row.Cells))
-        {
-            if (cell.IsProtectedFromRecognitionRefresh ||
-                string.IsNullOrWhiteSpace(cell.CurrentText) ||
-                !cell.CurrentText.Any(char.IsLetter))
-            {
-                continue;
-            }
-
-            var normalized = CorrectionNormalizer.NormalizeComparable(
-                cell.CurrentText,
-                CorrectionFieldKind.Nomenclature);
-
-            if (normalized.Length == 0)
-            {
-                continue;
-            }
-
-            IReadOnlyList<Ocyfrovka.Persistence.CorrectionMemoryEntry> matches;
-
-            try
-            {
-                matches = _persistence.FindCorrections(
-                    normalized,
-                    CorrectionFieldKind.Nomenclature.ToString(),
-                    limit: 3);
-            }
-            catch
-            {
-                continue;
-            }
-
-            if (matches.Count == 0)
-            {
-                continue;
-            }
-
-            var top = matches[0];
-            var tied = matches
-                .Skip(1)
-                .Any(other =>
-                    other.HitCount == top.HitCount &&
-                    !string.Equals(
-                        other.Canonical,
-                        top.Canonical,
-                        StringComparison.OrdinalIgnoreCase));
-
-            if (!tied &&
-                !string.Equals(
-                    cell.CurrentText.Trim(),
-                    top.Canonical,
-                    StringComparison.Ordinal))
-            {
-                cell.SetSuggestion(top.Canonical);
-            }
         }
     }
 
