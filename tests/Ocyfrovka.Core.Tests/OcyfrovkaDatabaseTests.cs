@@ -30,6 +30,19 @@ public sealed class OcyfrovkaDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void HealthCheck_ReportsHealthySchema()
+    {
+        var database = CreateDatabase();
+
+        var health = database.CheckHealth();
+
+        Assert.True(health.IsHealthy);
+        Assert.Equal(OcyfrovkaDatabase.CurrentSchemaVersion, health.SchemaVersion);
+        Assert.Equal("ok", health.IntegrityResult, ignoreCase: true);
+        Assert.True(File.Exists(health.DatabasePath));
+    }
+
+    [Fact]
     public void PageReview_RoundTripsManualAndConfirmedStateWithProvenance()
     {
         var database = CreateDatabase();
