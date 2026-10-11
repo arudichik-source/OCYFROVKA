@@ -32,7 +32,8 @@ public sealed class OcyfrovkaDatabase
         {
             DataSource = _databasePath,
             Mode = SqliteOpenMode.ReadWriteCreate,
-            Cache = SqliteCacheMode.Shared
+            Cache = SqliteCacheMode.Shared,
+            Pooling = false
         };
 
         _connectionString = builder.ToString();
